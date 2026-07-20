@@ -3,10 +3,13 @@ package dev.nokhxyr.wherewasi.ui;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 
 import dev.nokhxyr.wherewasi.ClientState;
@@ -45,15 +48,17 @@ public final class ZonesScreen extends Screen {
         addRenderableWidget(nameInput);
 
         int by = height - 32;
-        int bw = (width - 40 - 18) / 4;
-        addRenderableWidget(Button.builder(Component.translatable("wherewasi.btn.apply"), b -> apply())
+        int bw = (width - 40 - 4 * 6) / 5;
+        addRenderableWidget(Button.builder(Component.translatable("wherewasi.btn.create_here"), b -> createHere())
                 .bounds(20, by, bw, 20).build());
+        addRenderableWidget(Button.builder(Component.translatable("wherewasi.btn.apply"), b -> apply())
+                .bounds(20 + (bw + 6), by, bw, 20).build());
         addRenderableWidget(Button.builder(Component.translatable("wherewasi.btn.delete"), b -> deleteSelected())
-                .bounds(20 + bw + 6, by, bw, 20).build());
-        mergeButton = Button.builder(mergeLabel(), b -> mergeAction()).bounds(20 + (bw + 6) * 2, by, bw, 20).build();
+                .bounds(20 + (bw + 6) * 2, by, bw, 20).build());
+        mergeButton = Button.builder(mergeLabel(), b -> mergeAction()).bounds(20 + (bw + 6) * 3, by, bw, 20).build();
         addRenderableWidget(mergeButton);
         addRenderableWidget(Button.builder(Component.translatable("wherewasi.btn.close"), b -> onClose())
-                .bounds(20 + (bw + 6) * 3, by, bw, 20).build());
+                .bounds(20 + (bw + 6) * 4, by, bw, 20).build());
 
         rebuild();
     }
@@ -175,6 +180,23 @@ public final class ZonesScreen extends Screen {
                 return true;
             }
         };
+    }
+
+    private void createHere() {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer p = mc.player;
+        String name = nameInput.getValue().trim();
+        if (p == null || name.isEmpty()) {
+            return;
+        }
+        String dim = p.level().dimension().location().toString();
+        BlockPos pos = p.blockPosition();
+        ActivityRecorder rec = ClientState.recorder();
+        Zone z = rec.zones().createZoneAt(dim, pos.getX(), pos.getZ(), name);
+        selZone = z.id();
+        selCandidate = -1;
+        rec.saveZones();
+        rebuild();
     }
 
     private void apply() {

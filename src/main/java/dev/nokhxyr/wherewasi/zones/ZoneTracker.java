@@ -124,6 +124,24 @@ public final class ZoneTracker {
         return zone;
     }
 
+    /**
+     * Creates a named zone at the player's current cell right now, without waiting for
+     * the dwell threshold. Anchored on the cell centre; inherits whatever dwell time the
+     * cell has already accumulated. Also marks the cell as prompted so it won't toast again.
+     */
+    public Zone createZoneAt(String dim, int x, int z, String name) {
+        int cx = Math.floorDiv(x, 64);
+        int cz = Math.floorDiv(z, 64);
+        long k = key(cx, cz);
+        Map<Long, Long> cells = cellTime.get(dim);
+        long millis = cells == null ? 0L : cells.getOrDefault(k, 0L);
+        String id = "zone_" + Integer.toHexString(zones.size()) + "_" + Long.toHexString(System.currentTimeMillis());
+        Zone zone = new Zone(id, name, dim, cx * 64 + 32, cz * 64 + 32, millis);
+        zones.add(zone);
+        prompted.add(dim + ":" + k);
+        return zone;
+    }
+
     public void rename(String id, String newName) {
         for (int i = 0; i < zones.size(); i++) {
             if (zones.get(i).id().equals(id)) {

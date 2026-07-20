@@ -17,6 +17,10 @@
   "wherewasi.btn.delete": "Delete",
   "wherewasi.btn.merge": "Merge",
   "wherewasi.btn.merge_into": "Merge into...",
+  "wherewasi.btn.add": "Add",
+  "wherewasi.btn.pin": "Pin",
+  "wherewasi.btn.unpin": "Unpin",
+  "wherewasi.btn.create_here": "Create here",
 
   "wherewasi.time.just_now": "just now",
   "wherewasi.time.minutes_ago": "%s min ago",
@@ -86,10 +90,11 @@
   "wherewasi.timeline.empty": "No entries recorded yet.",
   "wherewasi.filter.all": "All",
 
-  "wherewasi.note.title": "New note",
+  "wherewasi.note.title": "Notes",
   "wherewasi.note.hint": "Write a note...",
   "wherewasi.note.pin_on": "Pinned: yes",
   "wherewasi.note.pin_off": "Pinned: no",
+  "wherewasi.note.empty": "No notes yet.",
 
   "wherewasi.zones.title": "Zones",
   "wherewasi.zones.name_hint": "Zone name...",
