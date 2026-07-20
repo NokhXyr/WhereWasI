@@ -1,0 +1,31 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "${mod_license}"
+
+[[mods]]
+modId = "${mod_id}"
+version = "${mod_version}"
+displayName = "Where Was I?"
+authors = "${mod_authors}"
+description = '''
+${mod_description}
+'''
+# This mod is 100% client-side. IGNORE_ALL_VERSION disables the client<->server
+# mod-list handshake so the jar connects to any server (vanilla or modded) and a
+# server never rejects a client that has it. A mod-level "clientSideOnly" flag does
+# NOT exist in NeoForge 21.1.x; @Mod(dist = Dist.CLIENT) is what keeps it off servers.
+displayTest = "IGNORE_ALL_VERSION"
+
+[[dependencies.${mod_id}]]
+modId = "neoforge"
+type = "required"
+versionRange = "[21.1.0,)"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.${mod_id}]]
+modId = "minecraft"
+type = "required"
+versionRange = "[1.21.1,1.22)"
+ordering = "NONE"
+side = "CLIENT"

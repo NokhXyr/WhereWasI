@@ -1,0 +1,60 @@
+plugins {
+    // ModDevGradle 2.x — latest stable. https://projects.neoforged.net/neoforged/ModDevGradle
+    id 'net.neoforged.moddev' version '2.0.142'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://maven.neoforged.net/releases' }
+}
+
+neoForge {
+    // Enabling modding fixes the NeoForge/Minecraft version for this project.
+    version = neo_version
+
+    // We ship no access transformers; keep validation on so any that sneak in fail fast.
+    validateAccessTransformers = true
+
+    // A single client run configuration — this mod is physical-client only.
+    runs {
+        client {
+            client()
+        }
+    }
+
+    mods {
+        wherewasi {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+// Expand ${...} placeholders in neoforge.mods.toml with the values from gradle.properties.
+// Keep the charset explicit so UTF-8 literals in the toml survive filtering.
+tasks.named('processResources', ProcessResources).configure {
+    filteringCharset = 'UTF-8'
+    def replacements = [
+            mod_id         : mod_id,
+            mod_license    : mod_license,
+            mod_version    : mod_version,
+            mod_authors    : mod_authors,
+            mod_description: mod_description,
+    ]
+    inputs.properties(replacements)
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand(replacements)
+    }
+}
