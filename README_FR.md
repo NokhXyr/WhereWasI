@@ -8,7 +8,7 @@
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-62B47A)
 ![NeoForge](https://img.shields.io/badge/NeoForge-21.1.232-F16436)
 ![Environnement](https://img.shields.io/badge/côté-client_uniquement-4C9AFF)
-![Licence](https://img.shields.io/badge/Licence-MIT-blue)
+![Licence](https://img.shields.io/badge/Licence-Tous%20droits%20r%C3%A9serv%C3%A9s-red)
 [![Modrinth](https://img.shields.io/badge/Modrinth-télécharger-00AF5C?logo=modrinth&logoColor=white)](# "À FAIRE : coller l'URL du projet Modrinth")
 [![CurseForge](https://img.shields.io/badge/CurseForge-télécharger-F16436?logo=curseforge&logoColor=white)](# "À FAIRE : coller l'URL du projet CurseForge")
 
@@ -228,20 +228,8 @@ le premier relevé tombe ~2 minutes plus tard — laisse-lui une session pour ch
 
 ---
 
-## 🤝 Contribuer
-
-Les issues et PR sont les bienvenues. Pour bidouiller le mod :
-
-```bash
-git clone https://github.com/lhybride59/WhereWasI.git
-cd WhereWasI
-./gradlew runClient   # lance un client de dev avec le mod chargé
-```
-
-Nécessite le JDK 21. NeoForge/Minecraft sont téléchargés au premier build.
-
----
-
 ## 📜 Licence
 
-MIT © NokhXyr. Voir [LICENSE](LICENSE).
+**Tous droits réservés** © 2026 NokhXyr. Tu peux télécharger le mod et y jouer, mais
+il ne peut **pas** être copié, modifié, forké, décompilé ni redistribué sans
+l'autorisation écrite de l'auteur. Voir [LICENSE](LICENSE).

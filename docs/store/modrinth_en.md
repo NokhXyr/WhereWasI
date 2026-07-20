@@ -88,7 +88,7 @@ the briefing and onto your HUD — *"come back with obsidian,"* *"portal is NORT
 
 ## 🔗 Links
 - **Source & issues:** https://github.com/lhybride59/WhereWasI
-- Requires **NeoForge** for **Minecraft 1.21.1**. License: MIT.
+- Requires **NeoForge** for **Minecraft 1.21.1**. License: All Rights Reserved.
 
 <!-- =================================================================== -->
 <!-- PUBLISHING METADATA (not part of the description text)              -->

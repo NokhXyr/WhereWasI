@@ -90,7 +90,7 @@ portail est au NORD »*.
 
 ## 🔗 Liens
 - **Code source & issues :** https://github.com/lhybride59/WhereWasI
-- Nécessite **NeoForge** pour **Minecraft 1.21.1**. Licence : MIT.
+- Nécessite **NeoForge** pour **Minecraft 1.21.1**. Licence : Tous droits réservés.
 
 <!-- =================================================================== -->
 <!-- MÉTADONNÉES DE PUBLICATION (ne fait pas partie de la description)   -->

@@ -8,7 +8,7 @@
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-62B47A)
 ![NeoForge](https://img.shields.io/badge/NeoForge-21.1.232-F16436)
 ![Environment](https://img.shields.io/badge/side-client--only-4C9AFF)
-![License](https://img.shields.io/badge/License-MIT-blue)
+![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red)
 [![Modrinth](https://img.shields.io/badge/Modrinth-download-00AF5C?logo=modrinth&logoColor=white)](# "TODO: paste the Modrinth project URL here")
 [![CurseForge](https://img.shields.io/badge/CurseForge-download-F16436?logo=curseforge&logoColor=white)](# "TODO: paste the CurseForge project URL here")
 
@@ -214,21 +214,9 @@ poll lands ~2 minutes in — so give it a session to warm up.
 
 ---
 
-## 🤝 Contributing
-
-Issues and PRs are welcome. To hack on it:
-
-```bash
-git clone https://github.com/lhybride59/WhereWasI.git
-cd WhereWasI
-./gradlew runClient   # launches a dev client with the mod loaded
-```
-
-Requires JDK 21. NeoForge/Minecraft are downloaded on the first build.
-
----
-
 ## 📜 License
 
-MIT © NokhXyr. See [LICENSE](LICENSE).
+**All Rights Reserved** © 2026 NokhXyr. You may download the mod and play with it,
+but it may **not** be copied, modified, forked, decompiled or redistributed without
+the author's written permission. See [LICENSE](LICENSE).
 # WhereWasI
