@@ -26,7 +26,6 @@ import dev.nokhxyr.wherewasi.storage.JournalStorage;
 public final class ZoneTracker {
 
     private static final String FILE = "zones.json";
-    private static final int TAG_RADIUS = 1;
 
     public record Candidate(String dim, int x, int z, long millis) {
     }
@@ -93,7 +92,7 @@ public final class ZoneTracker {
     public Zone zoneAt(String dim, int x, int z) {
         Zone best = null;
         for (Zone zone : zones) {
-            if (zone.covers(dim, x, z, TAG_RADIUS) && (best == null || zone.millis() > best.millis())) {
+            if (zone.covers(dim, x, z) && (best == null || zone.areaBlocks() < best.areaBlocks())) {
                 best = zone;
             }
         }
@@ -118,28 +117,54 @@ public final class ZoneTracker {
     }
 
     public Zone nameCandidate(Candidate c, String name) {
-        String id = "zone_" + Integer.toHexString(zones.size()) + "_" + Long.toHexString(c.millis()) + Integer.toHexString(c.x() ^ c.z());
-        Zone zone = new Zone(id, name, c.dim(), c.x(), c.z(), c.millis());
+        int cx = Math.floorDiv(c.x(), 64);
+        int cz = Math.floorDiv(c.z(), 64);
+        Zone zone = new Zone(newId(), name, c.dim(), cx * 64, cz * 64, cx * 64 + 63, cz * 64 + 63, c.millis());
         zones.add(zone);
         return zone;
     }
 
-    /**
-     * Creates a named zone at the player's current cell right now, without waiting for
-     * the dwell threshold. Anchored on the cell centre; inherits whatever dwell time the
-     * cell has already accumulated. Also marks the cell as prompted so it won't toast again.
-     */
+    /** Claims the single 64x64 cell at the given position (the quick "here" claim). */
     public Zone createZoneAt(String dim, int x, int z, String name) {
         int cx = Math.floorDiv(x, 64);
         int cz = Math.floorDiv(z, 64);
-        long k = key(cx, cz);
-        Map<Long, Long> cells = cellTime.get(dim);
-        long millis = cells == null ? 0L : cells.getOrDefault(k, 0L);
-        String id = "zone_" + Integer.toHexString(zones.size()) + "_" + Long.toHexString(System.currentTimeMillis());
-        Zone zone = new Zone(id, name, dim, cx * 64 + 32, cz * 64 + 32, millis);
+        long millis = cellTime.getOrDefault(dim, Map.of()).getOrDefault(key(cx, cz), 0L);
+        Zone zone = new Zone(newId(), name, dim, cx * 64, cz * 64, cx * 64 + 63, cz * 64 + 63, millis);
         zones.add(zone);
-        prompted.add(dim + ":" + k);
+        prompted.add(dim + ":" + key(cx, cz));
         return zone;
+    }
+
+    /**
+     * Claims every chunk between two world points (a two-corner "claim" selection) as one
+     * zone. The box is snapped to whole chunks; dwell time already accumulated in the
+     * covered area is carried over.
+     */
+    public Zone createClaim(String dim, int x1, int z1, int x2, int z2, String name) {
+        int[] box = Zone.boxFromPoints(x1, z1, x2, z2);
+        Zone zone = new Zone(newId(), name, dim, box[0], box[1], box[2], box[3],
+                sumCellTime(dim, box[0], box[1], box[2], box[3]));
+        zones.add(zone);
+        markPrompted(dim, box);
+        return zone;
+    }
+
+    /** Grows (delta &gt; 0) or shrinks (delta &lt; 0) a claim by whole chunks on every side. */
+    public void resize(String id, int delta) {
+        int d = delta * 16;
+        for (int i = 0; i < zones.size(); i++) {
+            Zone z = zones.get(i);
+            if (z.id().equals(id)) {
+                int nMinX = z.minX() - d;
+                int nMinZ = z.minZ() - d;
+                int nMaxX = z.maxX() + d;
+                int nMaxZ = z.maxZ() + d;
+                if (nMaxX >= nMinX && nMaxZ >= nMinZ) {
+                    zones.set(i, z.withBounds(nMinX, nMinZ, nMaxX, nMaxZ));
+                }
+                return;
+            }
+        }
     }
 
     public void rename(String id, String newName) {
@@ -162,7 +187,10 @@ public final class ZoneTracker {
         if (into == null || other == null || intoId.equals(otherId)) {
             return;
         }
-        Zone merged = new Zone(into.id(), into.name(), into.dim(), into.x(), into.z(), into.millis() + other.millis());
+        Zone merged = new Zone(into.id(), into.name(), into.dim(),
+                Math.min(into.minX(), other.minX()), Math.min(into.minZ(), other.minZ()),
+                Math.max(into.maxX(), other.maxX()), Math.max(into.maxZ(), other.maxZ()),
+                into.millis() + other.millis());
         for (int i = 0; i < zones.size(); i++) {
             if (zones.get(i).id().equals(intoId)) {
                 zones.set(i, merged);
@@ -249,6 +277,34 @@ public final class ZoneTracker {
     }
 
     // ---- helpers -----------------------------------------------------------
+
+    private String newId() {
+        return "zone_" + Integer.toHexString(zones.size()) + "_" + Long.toHexString(System.currentTimeMillis());
+    }
+
+    private long sumCellTime(String dim, int minX, int minZ, int maxX, int maxZ) {
+        Map<Long, Long> cells = cellTime.get(dim);
+        if (cells == null) {
+            return 0L;
+        }
+        long total = 0L;
+        for (Map.Entry<Long, Long> e : cells.entrySet()) {
+            int wx = keyX(e.getKey()) * 64 + 32;
+            int wz = keyZ(e.getKey()) * 64 + 32;
+            if (wx >= minX && wx <= maxX && wz >= minZ && wz <= maxZ) {
+                total += e.getValue();
+            }
+        }
+        return total;
+    }
+
+    private void markPrompted(String dim, int[] box) {
+        for (int cx = Math.floorDiv(box[0], 64); cx <= Math.floorDiv(box[2], 64); cx++) {
+            for (int cz = Math.floorDiv(box[1], 64); cz <= Math.floorDiv(box[3], 64); cz++) {
+                prompted.add(dim + ":" + key(cx, cz));
+            }
+        }
+    }
 
     private static long thresholdMillis() {
         return WhereWasIConfig.CONFIG.zoneThresholdMinutes.get() * 60_000L;

@@ -106,16 +106,30 @@ public final class JournalCodec {
         o.addProperty("id", z.id());
         o.addProperty("name", z.name());
         o.addProperty("dim", z.dim());
-        o.addProperty("x", z.x());
-        o.addProperty("z", z.z());
+        o.addProperty("x0", z.minX());
+        o.addProperty("z0", z.minZ());
+        o.addProperty("x1", z.maxX());
+        o.addProperty("z1", z.maxZ());
         o.addProperty("ms", z.millis());
         return o;
     }
 
     public static Zone zoneFromJson(JsonObject o) {
-        return new Zone(
-                str(o, "id", ""), str(o, "name", "?"), str(o, "dim", "minecraft:overworld"),
-                integer(o, "x", 0), integer(o, "z", 0), lng(o, "ms", 0L));
+        String id = str(o, "id", "");
+        String name = str(o, "name", "?");
+        String dim = str(o, "dim", "minecraft:overworld");
+        long ms = lng(o, "ms", 0L);
+        if (o.has("x0")) {
+            return new Zone(id, name, dim,
+                    integer(o, "x0", 0), integer(o, "z0", 0),
+                    integer(o, "x1", 0), integer(o, "z1", 0), ms);
+        }
+        // Legacy center + radius (radius in 64-block cells) -> bounding box.
+        int cx = Math.floorDiv(integer(o, "x", 0), 64);
+        int cz = Math.floorDiv(integer(o, "z", 0), 64);
+        int r = integer(o, "r", 1);
+        return new Zone(id, name, dim,
+                (cx - r) * 64, (cz - r) * 64, (cx + r) * 64 + 63, (cz + r) * 64 + 63, ms);
     }
 
     // ---- Note --------------------------------------------------------------

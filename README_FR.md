@@ -230,6 +230,8 @@ le premier relevé tombe ~2 minutes plus tard — laisse-lui une session pour ch
 
 ## 📜 Licence
 
-**Tous droits réservés** © 2026 NokhXyr. Tu peux télécharger le mod et y jouer, mais
-il ne peut **pas** être copié, modifié, forké, décompilé ni redistribué sans
-l'autorisation écrite de l'auteur. Voir [LICENSE](LICENSE).
+**Tous droits réservés** © 2026 NokhXyr. En résumé : **télécharge-le et joues-y**
+(depuis les sources officielles), **mets-le en modpack** (avec crédit) et **fais-en
+des vidéos/streams** — mais **ne le ré-héberge pas**, ne distribue pas de versions
+modifiées et ne réutilise pas son code ou ses assets. Conditions complètes dans
+[LICENSE](LICENSE).

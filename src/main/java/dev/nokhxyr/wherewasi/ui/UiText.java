@@ -129,6 +129,7 @@ public final class UiText {
             case DIMENSION_CHANGE -> new ItemStack(Items.ENDER_PEARL);
             case NOTE -> new ItemStack(Items.WRITABLE_BOOK);
             case ZONE_NAMED -> new ItemStack(Items.OAK_SIGN);
+            case ZONE_ACTIVITY -> new ItemStack(Items.COMPASS);
             case SESSION_START, SESSION_END -> new ItemStack(Items.CLOCK);
         };
     }
@@ -147,6 +148,8 @@ public final class UiText {
             case DIMENSION_CHANGE -> Component.translatable("wherewasi.event.dimension", dimensionName(e.get("to")));
             case NOTE -> Component.translatable("wherewasi.event.note", e.get("text") != null ? e.get("text") : "");
             case ZONE_NAMED -> Component.translatable("wherewasi.event.zone_named", e.get("name") != null ? e.get("name") : "");
+            case ZONE_ACTIVITY -> Component.translatable("wherewasi.event.zone_activity",
+                    e.getInt("mined", 0), e.getInt("kills", 0));
             case SESSION_START -> Component.translatable("wherewasi.event.session_start");
             case SESSION_END -> Component.translatable("wherewasi.event.session_end");
         };

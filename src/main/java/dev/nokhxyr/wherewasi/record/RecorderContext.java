@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos;
 import dev.nokhxyr.wherewasi.model.ActivityEvent;
 import dev.nokhxyr.wherewasi.model.EventType;
 import dev.nokhxyr.wherewasi.model.Importance;
+import dev.nokhxyr.wherewasi.model.Zone;
 import dev.nokhxyr.wherewasi.storage.JournalStorage;
 import dev.nokhxyr.wherewasi.zones.ZoneTracker;
 
@@ -50,6 +51,16 @@ public final class RecorderContext {
     public String dimension() {
         LocalPlayer p = mc.player;
         return p == null ? null : p.level().dimension().location().toString();
+    }
+
+    /** The named zone the player is currently inside, or null. Cheap; call at poll time, not per tick. */
+    public Zone currentZone() {
+        LocalPlayer p = mc.player;
+        if (p == null) {
+            return null;
+        }
+        BlockPos pos = p.blockPosition();
+        return recorder.zones().zoneAt(p.level().dimension().location().toString(), pos.getX(), pos.getZ());
     }
 
     /**

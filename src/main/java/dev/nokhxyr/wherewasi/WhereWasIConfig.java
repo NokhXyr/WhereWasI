@@ -34,6 +34,9 @@ public final class WhereWasIConfig {
     public final ModConfigSpec.BooleanValue hudPinnedNote;
     public final ModConfigSpec.BooleanValue hudGuide;
     public final ModConfigSpec.EnumValue<HudCorner> hudCorner;
+    public final ModConfigSpec.BooleanValue guideAutoClear;
+    public final ModConfigSpec.IntValue guideArrivalRadius;
+    public final ModConfigSpec.BooleanValue verboseZones;
 
     private WhereWasIConfig(ModConfigSpec.Builder b) {
         b.comment("Where Was I? — automatic play journal & resume briefing (client-side).");
@@ -70,6 +73,15 @@ public final class WhereWasIConfig {
                 .define("hudGuide", true);
         hudCorner = b.comment("Which screen corner the HUD widgets attach to.")
                 .defineEnum("hudCorner", HudCorner.TOP_LEFT);
+        guideAutoClear = b.comment("Automatically hide the guide arrow once you reach the target.")
+                .define("guideAutoClear", true);
+        guideArrivalRadius = b.comment("How close (blocks) counts as 'arrived' for auto-hiding the guide.")
+                .defineInRange("guideArrivalRadius", 8, 2, 64);
+        b.pop();
+
+        b.push("logging");
+        verboseZones = b.comment("Log more inside your named zones (activity summaries, lower thresholds) and keep it light outside. All checks are interval-gated, so it stays cheap.")
+                .define("verboseZones", true);
         b.pop();
     }
 }

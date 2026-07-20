@@ -11,8 +11,13 @@ import dev.nokhxyr.wherewasi.ui.GuideTarget;
  */
 public final class ClientState {
 
+    /** The first corner marked during a two-point zone claim. */
+    public record Corner(String dim, int x, int z) {
+    }
+
     private static final ActivityRecorder RECORDER = new ActivityRecorder();
     private static volatile GuideTarget guideTarget;
+    private static Corner pendingCorner;
 
     private ClientState() {
     }
@@ -31,5 +36,17 @@ public final class ClientState {
 
     public static void clearGuide() {
         guideTarget = null;
+    }
+
+    public static Corner pendingCorner() {
+        return pendingCorner;
+    }
+
+    public static void setPendingCorner(Corner corner) {
+        pendingCorner = corner;
+    }
+
+    public static void clearPendingCorner() {
+        pendingCorner = null;
     }
 }

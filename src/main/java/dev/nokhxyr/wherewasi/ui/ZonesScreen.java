@@ -132,16 +132,49 @@ public final class ZonesScreen extends Screen {
                 if (z.id().equals(mergeSource)) {
                     g.fill(x, y, x + 2, y + 18, UiText.COL_WARN);
                 }
+                // Right cluster: [-] <size> [+] and the dwell time.
+                Component t = UiText.duration(z.millis());
+                Component minus = Component.literal("[-]");
+                Component plus = Component.literal("[+]");
+                Component size = Component.literal(z.chunksWide() + "x" + z.chunksDeep());
+                int durX = x + width - 8 - font.width(t);
+                int plusX = durX - 8 - font.width(plus);
+                int sizeX = plusX - 4 - font.width(size);
+                int minusX = sizeX - 4 - font.width(minus);
+                g.drawString(font, t, durX, y + 5, UiText.COL_DIM);
+                g.drawString(font, plus, plusX, y + 5, UiText.COL_ACCENT);
+                g.drawString(font, size, sizeX, y + 5, UiText.COL_DIM);
+                g.drawString(font, minus, minusX, y + 5, UiText.COL_ACCENT);
+
                 Component line = Component.literal(z.name() + "  ")
                         .append(UiText.dimensionName(z.dim()))
-                        .append(Component.literal("  " + z.x() + ", " + z.z()));
-                g.drawString(font, line, x + 6, y + 5, UiText.COL_TEXT);
-                Component t = UiText.duration(z.millis());
-                g.drawString(font, t, x + width - 8 - font.width(t), y + 5, UiText.COL_DIM);
+                        .append(Component.literal("  " + z.centerX() + ", " + z.centerZ()));
+                int clipRight = minusX - 4;
+                if (clipRight > x + 6) {
+                    g.enableScissor(x + 6, y, clipRight, y + 18);
+                    g.drawString(font, line, x + 6, y + 5, UiText.COL_TEXT);
+                    g.disableScissor();
+                }
             }
 
             @Override
             public boolean click(double mouseX, double mouseY, int x, int y, int width) {
+                Component t = UiText.duration(z.millis());
+                Component minus = Component.literal("[-]");
+                Component plus = Component.literal("[+]");
+                Component size = Component.literal(z.chunksWide() + "x" + z.chunksDeep());
+                int durX = x + width - 8 - font.width(t);
+                int plusX = durX - 8 - font.width(plus);
+                int sizeX = plusX - 4 - font.width(size);
+                int minusX = sizeX - 4 - font.width(minus);
+                if (mouseX >= plusX - 3 && mouseX <= plusX + font.width(plus) + 3) {
+                    resizeZone(z.id(), 1);
+                    return true;
+                }
+                if (mouseX >= minusX - 3 && mouseX <= minusX + font.width(minus) + 3) {
+                    resizeZone(z.id(), -1);
+                    return true;
+                }
                 selZone = z.id();
                 selCandidate = -1;
                 nameInput.setValue(z.name());
@@ -194,6 +227,15 @@ public final class ZonesScreen extends Screen {
         ActivityRecorder rec = ClientState.recorder();
         Zone z = rec.zones().createZoneAt(dim, pos.getX(), pos.getZ(), name);
         selZone = z.id();
+        selCandidate = -1;
+        rec.saveZones();
+        rebuild();
+    }
+
+    private void resizeZone(String id, int delta) {
+        ActivityRecorder rec = ClientState.recorder();
+        rec.zones().resize(id, delta);
+        selZone = id;
         selCandidate = -1;
         rec.saveZones();
         rebuild();

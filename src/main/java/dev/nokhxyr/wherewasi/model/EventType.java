@@ -16,6 +16,7 @@ public enum EventType {
     BULK_ACQUIRE(3),
     MINE_MILESTONE(6),
     ZONE_NAMED(2),
+    ZONE_ACTIVITY(2),
     NOTE(6);
 
     private final int baseImportance;

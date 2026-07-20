@@ -19,6 +19,7 @@ import net.minecraft.world.level.block.Block;
 
 import dev.nokhxyr.wherewasi.WhereWasIConfig;
 import dev.nokhxyr.wherewasi.model.EventType;
+import dev.nokhxyr.wherewasi.model.Zone;
 
 /**
  * The heart of accurate capture. Periodically sends the same {@code REQUEST_STATS}
@@ -56,6 +57,9 @@ public final class StatsPoller implements Sampler {
     private int baselineDeaths;
     private final Map<String, Integer> baselineNotables = new HashMap<>();
     private final Set<String> firedNotables = new HashSet<>();
+    private long prevPollMined;
+    private int prevPollKills;
+    private long nextInterval;
 
     @Override
     public void onSessionStart(RecorderContext ctx) {
@@ -80,17 +84,22 @@ public final class StatsPoller implements Sampler {
                 captureBaseline(p.getStats());
                 baselineCaptured = true;
                 lastPollMs = now;
+                nextInterval = WhereWasIConfig.CONFIG.statsPollSeconds.get() * 1000L;
             }
             return;
         }
 
-        long interval = WhereWasIConfig.CONFIG.statsPollSeconds.get() * 1000L;
-        if (now - lastPollMs < interval) {
+        if (now - lastPollMs < nextInterval) {
             return;
         }
         lastPollMs = now;
-        poll(ctx, p.getStats());
+        long base = WhereWasIConfig.CONFIG.statsPollSeconds.get() * 1000L;
+        Zone zone = ctx.currentZone(); // one cheap zone check per poll, never per tick
+        boolean verbose = zone != null && WhereWasIConfig.CONFIG.verboseZones.get();
+        poll(ctx, p.getStats(), verbose);
         requestStats(ctx); // refresh for the next cycle
+        // Finer cadence while inside a named zone, lighter outside.
+        nextInterval = verbose ? Math.max(30_000L, base / 2L) : base;
     }
 
     private void captureBaseline(StatsCounter s) {
@@ -98,6 +107,8 @@ public final class StatsPoller implements Sampler {
         baselineMobKills = s.getValue(Stats.CUSTOM.get(Stats.MOB_KILLS));
         baselineDeaths = s.getValue(Stats.CUSTOM.get(Stats.DEATHS));
         baselineDistanceCm = totalDistanceCm(s);
+        prevPollMined = baselineMined;
+        prevPollKills = baselineMobKills;
         for (ResourceLocation b : NOTABLE_BLOCKS) {
             baselineNotables.put("block:" + b, minedCount(s, b));
         }
@@ -106,11 +117,15 @@ public final class StatsPoller implements Sampler {
         }
     }
 
-    private void poll(RecorderContext ctx, StatsCounter s) {
-        int mined = (int) Math.max(0L, totalMined(s) - baselineMined);
-        int mobKills = Math.max(0, s.getValue(Stats.CUSTOM.get(Stats.MOB_KILLS)) - baselineMobKills);
+    private void poll(RecorderContext ctx, StatsCounter s, boolean verbose) {
+        long totalMinedNow = totalMined(s);
+        int mobKillsNow = s.getValue(Stats.CUSTOM.get(Stats.MOB_KILLS));
+        long distNow = totalDistanceCm(s);
+
+        int mined = (int) Math.max(0L, totalMinedNow - baselineMined);
+        int mobKills = Math.max(0, mobKillsNow - baselineMobKills);
         int deaths = Math.max(0, s.getValue(Stats.CUSTOM.get(Stats.DEATHS)) - baselineDeaths);
-        long distCm = Math.max(0L, totalDistanceCm(s) - baselineDistanceCm);
+        long distCm = Math.max(0L, distNow - baselineDistanceCm);
         ctx.recorder().updateSessionStats(mined, mobKills, deaths, distCm);
 
         for (ResourceLocation b : NOTABLE_BLOCKS) {
@@ -137,6 +152,20 @@ public final class StatsPoller implements Sampler {
                 ctx.emit(EventType.FIRST_ACQUIRE, payload);
             }
         }
+
+        // Verbose in-zone summary: what happened here since the last poll.
+        if (verbose) {
+            int minedDelta = (int) Math.max(0L, totalMinedNow - prevPollMined);
+            int killDelta = Math.max(0, mobKillsNow - prevPollKills);
+            if (minedDelta > 0 || killDelta > 0) {
+                Map<String, String> activity = new LinkedHashMap<>();
+                activity.put("mined", Integer.toString(minedDelta));
+                activity.put("kills", Integer.toString(killDelta));
+                ctx.emit(EventType.ZONE_ACTIVITY, activity);
+            }
+        }
+        prevPollMined = totalMinedNow;
+        prevPollKills = mobKillsNow;
     }
 
     private void requestStats(RecorderContext ctx) {

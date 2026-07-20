@@ -1,36 +1,59 @@
 package dev.nokhxyr.wherewasi.model;
 
 /**
- * A named area of interest, anchored on the 64x64 cell where the player spent
- * the most time. {@link #covers} lets events be tagged with the zone they fall
- * in, allowing a small radius around the anchor so a "base" spanning a few cells
- * still reads as one place.
+ * A claimed rectangular area, defined by two opposite corners (a block-coordinate
+ * bounding box, chunk-aligned when created from two points). Events whose position
+ * falls inside the box are tagged with the zone.
  */
 public record Zone(
         String id,
         String name,
         String dim,
-        int x, int z,
+        int minX, int minZ,
+        int maxX, int maxZ,
         long millis
 ) {
-    public int cellX() {
-        return Math.floorDiv(x, 64);
+    public boolean covers(String otherDim, int px, int pz) {
+        return dim.equals(otherDim) && px >= minX && px <= maxX && pz >= minZ && pz <= maxZ;
     }
 
-    public int cellZ() {
-        return Math.floorDiv(z, 64);
+    public int centerX() {
+        return Math.floorDiv(minX + maxX, 2);
     }
 
-    public boolean covers(String otherDim, int px, int pz, int cellRadius) {
-        if (!dim.equals(otherDim)) {
-            return false;
-        }
-        int dcx = Math.abs(Math.floorDiv(px, 64) - cellX());
-        int dcz = Math.abs(Math.floorDiv(pz, 64) - cellZ());
-        return dcx <= cellRadius && dcz <= cellRadius;
+    public int centerZ() {
+        return Math.floorDiv(minZ + maxZ, 2);
+    }
+
+    public int chunksWide() {
+        return (maxX - minX + 1) / 16;
+    }
+
+    public int chunksDeep() {
+        return (maxZ - minZ + 1) / 16;
+    }
+
+    public long areaBlocks() {
+        return (long) (maxX - minX + 1) * (maxZ - minZ + 1);
     }
 
     public Zone withName(String newName) {
-        return new Zone(id, newName, dim, x, z, millis);
+        return new Zone(id, newName, dim, minX, minZ, maxX, maxZ, millis);
+    }
+
+    public Zone withBounds(int nMinX, int nMinZ, int nMaxX, int nMaxZ) {
+        return new Zone(id, name, dim, nMinX, nMinZ, nMaxX, nMaxZ, millis);
+    }
+
+    /**
+     * Chunk-aligned bounding box spanning two world points — this is what "claims
+     * the chunks between the two corners". Returns {@code [minX, minZ, maxX, maxZ]}.
+     */
+    public static int[] boxFromPoints(int x1, int z1, int x2, int z2) {
+        int minX = (Math.min(x1, x2) >> 4) << 4;
+        int minZ = (Math.min(z1, z2) >> 4) << 4;
+        int maxX = ((Math.max(x1, x2) >> 4) << 4) + 15;
+        int maxZ = ((Math.max(z1, z2) >> 4) << 4) + 15;
+        return new int[]{minX, minZ, maxX, maxZ};
     }
 }

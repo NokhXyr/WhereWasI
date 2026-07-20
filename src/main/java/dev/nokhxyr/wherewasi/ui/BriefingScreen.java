@@ -87,7 +87,7 @@ public final class BriefingScreen extends Screen {
         Component zoneLine;
         if (zone != null) {
             zoneLine = Component.translatable("wherewasi.briefing.zone", zone.name())
-                    .append(" ").append(distanceTo(zone.dim(), zone.x(), zone.z()));
+                    .append(" ").append(distanceTo(zone.dim(), zone.centerX(), zone.centerZ()));
         } else {
             zoneLine = Component.translatable("wherewasi.briefing.zone_none");
         }
@@ -139,7 +139,7 @@ public final class BriefingScreen extends Screen {
     private void guideToZone() {
         Zone z = briefing.mainZone();
         if (z != null) {
-            ClientState.setGuideTarget(new GuideTarget(z.dim(), z.x(), 64, z.z(), z.name()));
+            ClientState.setGuideTarget(new GuideTarget(z.dim(), z.centerX(), 64, z.centerZ(), z.name()));
         }
         onClose();
     }

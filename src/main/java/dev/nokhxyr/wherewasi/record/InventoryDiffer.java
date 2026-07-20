@@ -61,6 +61,11 @@ public final class InventoryDiffer implements Sampler {
 
         Map<String, Integer> current = snapshot(ctx);
         int bulk = WhereWasIConfig.CONFIG.bulkAcquireThreshold.get();
+        // Inside a named zone (verbose logging), log smaller hauls too. One cheap
+        // zone check per poll (every few seconds), never per tick.
+        if (WhereWasIConfig.CONFIG.verboseZones.get() && ctx.currentZone() != null) {
+            bulk = Math.max(8, bulk / 4);
+        }
 
         for (Map.Entry<String, Integer> entry : current.entrySet()) {
             String id = entry.getKey();

@@ -5,6 +5,7 @@
   "key.wherewasi.briefing": "Show briefing",
   "key.wherewasi.zones": "Manage zones",
   "key.wherewasi.clear_guide": "Clear guide",
+  "key.wherewasi.mark_zone": "Mark zone corner (claim)",
 
   "wherewasi.btn.guide": "Guide",
   "wherewasi.btn.open_journal": "Open journal",
@@ -21,6 +22,7 @@
   "wherewasi.btn.pin": "Pin",
   "wherewasi.btn.unpin": "Unpin",
   "wherewasi.btn.create_here": "Create here",
+  "wherewasi.btn.claim": "Claim",
 
   "wherewasi.time.just_now": "just now",
   "wherewasi.time.minutes_ago": "%s min ago",
@@ -50,6 +52,7 @@
   "wherewasi.event.dimension": "Entered %s",
   "wherewasi.event.note": "Note: %s",
   "wherewasi.event.zone_named": "Zone named: %s",
+  "wherewasi.event.zone_activity": "Active here: +%1$s mined, +%2$s killed",
   "wherewasi.event.session_start": "Session started",
   "wherewasi.event.session_end": "Session ended",
 
@@ -62,6 +65,7 @@
   "wherewasi.type.bulk_acquire": "Bulk gain",
   "wherewasi.type.mine_milestone": "Mining milestone",
   "wherewasi.type.zone_named": "Zone named",
+  "wherewasi.type.zone_activity": "Zone activity",
   "wherewasi.type.note": "Note",
 
   "wherewasi.hud.note": "* %s",
@@ -70,6 +74,14 @@
 
   "wherewasi.toast.zone.title": "Where Was I?",
   "wherewasi.toast.zone.msg": "You spend time here - name this zone? (%1$s, %2$s)",
+  "wherewasi.toast.arrived.title": "Arrived",
+  "wherewasi.toast.arrived.msg": "Reached %s - guide hidden.",
+  "wherewasi.toast.claim1.title": "Zone claim",
+  "wherewasi.toast.claim1.msg": "Corner 1 set - go to the opposite corner and press the key again.",
+  "wherewasi.toast.claim2.title": "Zone claimed",
+  "wherewasi.toast.claim2.msg": "'%1$s' claimed (%2$s chunks).",
+  "wherewasi.claim.title": "Claim a zone",
+  "wherewasi.claim.info": "%1$sx%2$s chunks (%3$s total)",
 
   "wherewasi.briefing.title": "Where was I?",
   "wherewasi.briefing.last_session": "Last session: %1$s, %2$s",

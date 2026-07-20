@@ -216,7 +216,8 @@ poll lands ~2 minutes in — so give it a session to warm up.
 
 ## 📜 License
 
-**All Rights Reserved** © 2026 NokhXyr. You may download the mod and play with it,
-but it may **not** be copied, modified, forked, decompiled or redistributed without
-the author's written permission. See [LICENSE](LICENSE).
+**All Rights Reserved** © 2026 NokhXyr. In short: **download & play** it (from
+official sources), **put it in modpacks** (with credit), and **make videos/streams**
+about it — but **don't** re-upload it, ship modified versions, or reuse its code or
+assets. Full terms in [LICENSE](LICENSE).
 # WhereWasI
