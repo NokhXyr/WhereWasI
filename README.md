@@ -242,6 +242,13 @@ poll lands ~2 minutes in — so give it a session to warm up.
 
 ---
 
+## 🚀 Releasing
+
+Maintainers: publishing to Modrinth & CurseForge is automated with GitHub Actions —
+create a GitHub Release and it ships everywhere. See **[docs/RELEASING.md](docs/RELEASING.md)**.
+
+---
+
 ## 📜 License
 
 **All Rights Reserved** © 2026 NokhXyr. In short: **download & play** it (from
