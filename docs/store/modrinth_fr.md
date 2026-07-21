@@ -78,17 +78,6 @@ portail est au NORD »_.
 
 ---
 
-## 📸 Captures d'écran
-
-<!-- À FAIRE : uploader dans la galerie Modrinth et/ou intégrer ici -->
-<!-- 1) Le briefing de reprise (touche B) -->
-<!-- 2) Le journal / la timeline (touche J) -->
-<!-- 3) La flèche de guidage HUD + une note épinglée -->
-
-_Galerie à venir._
-
----
-
 ## ❓ Petite FAQ
 
 **Sur un serveur ?** Oui — côté client, n'importe quel serveur, rien à installer pour eux.
