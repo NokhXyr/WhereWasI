@@ -1,6 +1,9 @@
 # Gradle
 .gradle/
-build/
+classes/
+moddev/
+resources/
+tmp/
 
 # ModDevGradle run directories
 run/
