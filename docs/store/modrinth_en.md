@@ -9,6 +9,7 @@ Never ask "where was I?" again. This client-side mod auto-journals your playthro
 <!-- =================================================================== -->
 
 # Where Was I?
+
 ### The mod that answers the question.
 
 You close Minecraft on a Tuesday. Life happens. Three weeks later you load the world
@@ -28,6 +29,7 @@ whole time, so you don't have to.
 ---
 
 ## 📋 A briefing when you return
+
 A few seconds after you rejoin a world — once, and only after a real break — you get a
 recap: when you last played and for how long, your **main base** (with live distance +
 direction to it), your session's **biggest moments**, where you **died**, and any note
@@ -35,6 +37,7 @@ you **pinned**. One click on **Guide** puts an arrow on your HUD pointing you ho
 minimap needed.
 
 ## 🛰️ Capture that just happens
+
 No buttons, no diary-keeping. It quietly tracks sessions, samples where you spend your
 time, watches your inventory for first-time item pickups and big hauls, and logs
 deaths, dimension changes and advancements — each scored by importance, so your first
@@ -46,21 +49,25 @@ killed, deaths and distance** are the server's own exact numbers — just as acc
 singleplayer, on a vanilla server, or in a massive modpack.
 
 ## 🗺️ Zones for your build sites
+
 Hang around one spot long enough and it discreetly offers to **name the place** — Base,
 Iron Farm, That Cave. Named zones organize your journal and power the briefing's "main
 area." Rename, merge and delete them whenever.
 
 ## 📖 A timeline you'll actually read
+
 Press **J** for the full journal: every event, newest first, grouped by day, with item
 icons and filters by type and zone.
 
 ## 📌 Pinned notes
+
 Press **N** to drop a quick note where you're standing. Pin one and it follows you into
-the briefing and onto your HUD — *"come back with obsidian,"* *"portal is NORTH."*
+the briefing and onto your HUD — _"come back with obsidian,"_ _"portal is NORTH."_
 
 ---
 
 ## 🌐 100% client-side — works everywhere
+
 - **Any server.** Vanilla or modded, it just works; servers never reject you for it.
 - **Nothing to install server-side.** Your admin does nothing; servers can't even tell.
 - **No blocks, items, recipes or commands.** It only reads what already happens.
@@ -69,16 +76,8 @@ the briefing and onto your HUD — *"come back with obsidian,"* *"portal is NORT
 
 ---
 
-## 📸 Screenshots
-<!-- TODO: upload these to the Modrinth gallery and/or embed them here -->
-<!-- 1) The resume briefing (key B) -->
-<!-- 2) The journal / timeline (key J) -->
-<!-- 3) The HUD guide arrow + a pinned note -->
-*Gallery coming soon.*
-
----
-
 ## ❓ Quick FAQ
+
 **On a server?** Yes — client-side, any server, nothing to install for them.
 **Performance?** Interval-based capture, no per-tick cost. Fine in huge packs.
 **Changes gameplay?** No blocks/items/commands. Read-only.
@@ -87,7 +86,8 @@ the briefing and onto your HUD — *"come back with obsidian,"* *"portal is NORT
 ---
 
 ## 🔗 Links
-- **Source & issues:** https://github.com/lhybride59/WhereWasI
+
+- **Source & issues:** https://github.com/NokhXyr/WhereWasI
 - Requires **NeoForge** for **Minecraft 1.21.1**. License: All Rights Reserved.
 
 <!-- =================================================================== -->

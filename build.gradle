@@ -3,7 +3,8 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.142'
 }
 
-version = mod_version
+// Jar version carries the game version too: wherewasi-1.21.1-1.0.0.jar
+version = "${minecraft_version}-${mod_version}"
 group = mod_group_id
 
 base {
@@ -47,11 +48,12 @@ neoForge {
 tasks.named('processResources', ProcessResources).configure {
     filteringCharset = 'UTF-8'
     def replacements = [
-            mod_id         : mod_id,
-            mod_license    : mod_license,
-            mod_version    : mod_version,
-            mod_authors    : mod_authors,
-            mod_description: mod_description,
+            mod_id           : mod_id,
+            mod_license      : mod_license,
+            mod_version      : mod_version,
+            mod_authors      : mod_authors,
+            mod_description  : mod_description,
+            minecraft_version: minecraft_version,
     ]
     inputs.properties(replacements)
     filesMatching('META-INF/neoforge.mods.toml') {
