@@ -85,6 +85,10 @@ public final class JournalCodec {
         o.addProperty("deaths", s.deaths());
         o.addProperty("distCm", s.distanceCm());
         o.addProperty("events", s.eventCount());
+        writeCounts(o, "bMined", s.mined());
+        writeCounts(o, "bPlaced", s.placed());
+        writeCounts(o, "bCrafted", s.crafted());
+        writeCounts(o, "bKilled", s.killed());
         return o;
     }
 
@@ -96,7 +100,34 @@ public final class JournalCodec {
                 integer(o, "lx", 0), integer(o, "ly", 0), integer(o, "lz", 0),
                 o.has("mainZone") ? o.get("mainZone").getAsString() : null,
                 integer(o, "mined", 0), integer(o, "kills", 0), integer(o, "deaths", 0),
-                lng(o, "distCm", 0L), integer(o, "events", 0));
+                lng(o, "distCm", 0L), integer(o, "events", 0),
+                readCounts(o, "bMined"), readCounts(o, "bPlaced"),
+                readCounts(o, "bCrafted"), readCounts(o, "bKilled"));
+    }
+
+    private static void writeCounts(JsonObject o, String key, Map<String, Integer> counts) {
+        if (counts == null || counts.isEmpty()) {
+            return;
+        }
+        JsonObject c = new JsonObject();
+        for (Map.Entry<String, Integer> e : counts.entrySet()) {
+            c.addProperty(e.getKey(), e.getValue());
+        }
+        o.add(key, c);
+    }
+
+    private static Map<String, Integer> readCounts(JsonObject o, String key) {
+        Map<String, Integer> m = new LinkedHashMap<>();
+        if (o.has(key) && o.get(key).isJsonObject()) {
+            for (Map.Entry<String, JsonElement> e : o.getAsJsonObject(key).entrySet()) {
+                try {
+                    m.put(e.getKey(), e.getValue().getAsInt());
+                } catch (Exception ignored) {
+                    // skip corrupt entry
+                }
+            }
+        }
+        return m;
     }
 
     // ---- Zone --------------------------------------------------------------

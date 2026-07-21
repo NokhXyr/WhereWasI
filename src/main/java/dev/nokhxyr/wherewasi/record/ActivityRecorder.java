@@ -23,6 +23,7 @@ import dev.nokhxyr.wherewasi.storage.JournalStorage;
 import dev.nokhxyr.wherewasi.ui.Briefing;
 import dev.nokhxyr.wherewasi.ui.BriefingScreen;
 import dev.nokhxyr.wherewasi.ui.Toasts;
+import dev.nokhxyr.wherewasi.ui.UiText;
 import dev.nokhxyr.wherewasi.zones.ZoneTracker;
 
 /**
@@ -36,7 +37,9 @@ public final class ActivityRecorder {
     private final List<Sampler> samplers = List.of(
             new PositionSampler(),
             new StatsPoller(),
+            new SegmentSampler(),
             new InventoryDiffer(),
+            new BiomeWatcher(),
             new AdvancementWatcher(),
             new DeathWatcher());
 
@@ -61,6 +64,10 @@ public final class ActivityRecorder {
     private long distanceCm;
     private int eventCount;
     private final Map<String, Long> sessionZoneDwell = new LinkedHashMap<>();
+    private Map<String, Integer> sMined = Map.of();
+    private Map<String, Integer> sPlaced = Map.of();
+    private Map<String, Integer> sCrafted = Map.of();
+    private Map<String, Integer> sKilled = Map.of();
 
     // Briefing scheduling ----------------------------------------------------
     private boolean briefingPending;
@@ -116,6 +123,7 @@ public final class ActivityRecorder {
         distanceCm = 0L;
         eventCount = 0;
         sessionZoneDwell.clear();
+        sMined = sPlaced = sCrafted = sKilled = Map.of();
         if (player != null) {
             BlockPos pos = player.blockPosition();
             lastDim = player.level().dimension().location().toString();
@@ -157,12 +165,18 @@ public final class ActivityRecorder {
             long end = System.currentTimeMillis();
 
             // Built directly (not via ctx.emit) because the player is usually already gone.
+            Map<String, String> endPayload = new LinkedHashMap<>();
+            String summaryLine = UiText.sessionSummary(sMined, sKilled, sCrafted);
+            if (!summaryLine.isEmpty()) {
+                endPayload.put("summary", summaryLine);
+            }
             record(new ActivityEvent(end, EventType.SESSION_END, lastDim, lastX, lastY, lastZ,
-                    mainZoneId, EventType.SESSION_END.baseImportance(), Map.of()));
+                    mainZoneId, EventType.SESSION_END.baseImportance(), endPayload));
 
             Session summary = new Session(sessionId, worldId, worldName, startMs, end,
                     lastDim, lastX, lastY, lastZ, mainZoneId,
-                    blocksMined, mobsKilled, deaths, distanceCm, eventCount);
+                    blocksMined, mobsKilled, deaths, distanceCm, eventCount,
+                    sMined, sPlaced, sCrafted, sKilled);
             storage.appendSession(summary);
             zones.save(storage);
             storage.saveNotes(notes);
@@ -212,6 +226,14 @@ public final class ActivityRecorder {
         this.mobsKilled = mobKills;
         this.deaths = sessionDeaths;
         this.distanceCm = distCm;
+    }
+
+    void updateSessionBreakdown(Map<String, Integer> mined, Map<String, Integer> placed,
+                                Map<String, Integer> crafted, Map<String, Integer> killed) {
+        this.sMined = mined;
+        this.sPlaced = placed;
+        this.sCrafted = crafted;
+        this.sKilled = killed;
     }
 
     void addZoneDwell(String zoneId, long ms) {

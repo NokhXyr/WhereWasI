@@ -9,7 +9,9 @@ package dev.nokhxyr.wherewasi.model;
 public enum EventType {
     SESSION_START(1),
     SESSION_END(1),
+    SEGMENT(2),
     DIMENSION_CHANGE(3),
+    BIOME_ENTER(3),
     DEATH(8),
     ADVANCEMENT(5),
     FIRST_ACQUIRE(4),

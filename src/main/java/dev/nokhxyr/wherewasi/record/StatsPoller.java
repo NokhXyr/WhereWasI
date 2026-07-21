@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.player.LocalPlayer;
@@ -14,6 +15,8 @@ import net.minecraft.network.protocol.game.ServerboundClientCommandPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.stats.Stats;
 import net.minecraft.stats.StatsCounter;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 
@@ -60,6 +63,10 @@ public final class StatsPoller implements Sampler {
     private long prevPollMined;
     private int prevPollKills;
     private long nextInterval;
+    private Map<String, Integer> baseMinedMap = Map.of();
+    private Map<String, Integer> basePlacedMap = Map.of();
+    private Map<String, Integer> baseCraftedMap = Map.of();
+    private Map<String, Integer> baseKilledMap = Map.of();
 
     @Override
     public void onSessionStart(RecorderContext ctx) {
@@ -69,6 +76,16 @@ public final class StatsPoller implements Sampler {
         baselineNotables.clear();
         firedNotables.clear();
         requestStats(ctx); // warm the data so the baseline is real
+    }
+
+    @Override
+    public void onSessionEnd(RecorderContext ctx) {
+        // Final read while the player is (usually) still loaded, so the session's
+        // full breakdown is captured even for very short sessions.
+        LocalPlayer p = ctx.mc().player;
+        if (p != null && baselineCaptured) {
+            poll(ctx, p.getStats(), false);
+        }
     }
 
     @Override
@@ -84,7 +101,8 @@ public final class StatsPoller implements Sampler {
                 captureBaseline(p.getStats());
                 baselineCaptured = true;
                 lastPollMs = now;
-                nextInterval = WhereWasIConfig.CONFIG.statsPollSeconds.get() * 1000L;
+                // First poll comes soon so even short sessions get a breakdown.
+                nextInterval = Math.min(25_000L, WhereWasIConfig.CONFIG.statsPollSeconds.get() * 1000L);
             }
             return;
         }
@@ -115,6 +133,10 @@ public final class StatsPoller implements Sampler {
         for (ResourceLocation i : NOTABLE_ITEMS) {
             baselineNotables.put("item:" + i, craftedCount(s, i));
         }
+        baseMinedMap = minedMap(s);
+        basePlacedMap = placedMap(s);
+        baseCraftedMap = craftedMap(s);
+        baseKilledMap = killedMap(s);
     }
 
     private void poll(RecorderContext ctx, StatsCounter s, boolean verbose) {
@@ -127,6 +149,12 @@ public final class StatsPoller implements Sampler {
         int deaths = Math.max(0, s.getValue(Stats.CUSTOM.get(Stats.DEATHS)) - baselineDeaths);
         long distCm = Math.max(0L, distNow - baselineDistanceCm);
         ctx.recorder().updateSessionStats(mined, mobKills, deaths, distCm);
+        // Per-type breakdown of the whole session (what was mined/placed/crafted/killed).
+        ctx.recorder().updateSessionBreakdown(
+                topDelta(minedMap(s), baseMinedMap),
+                topDelta(placedMap(s), basePlacedMap),
+                topDelta(craftedMap(s), baseCraftedMap),
+                topDelta(killedMap(s), baseKilledMap));
 
         for (ResourceLocation b : NOTABLE_BLOCKS) {
             String key = "block:" + b;
@@ -203,6 +231,64 @@ public final class StatsPoller implements Sampler {
     private static int craftedCount(StatsCounter s, ResourceLocation id) {
         Item item = BuiltInRegistries.ITEM.get(id);
         return s.getValue(Stats.ITEM_CRAFTED.get(item));
+    }
+
+    private static final int TOP_N = 12;
+
+    private static Map<String, Integer> minedMap(StatsCounter s) {
+        Map<String, Integer> m = new HashMap<>();
+        for (Block b : BuiltInRegistries.BLOCK) {
+            int v = s.getValue(Stats.BLOCK_MINED.get(b));
+            if (v > 0) {
+                m.put(BuiltInRegistries.BLOCK.getKey(b).toString(), v);
+            }
+        }
+        return m;
+    }
+
+    private static Map<String, Integer> placedMap(StatsCounter s) {
+        Map<String, Integer> m = new HashMap<>();
+        for (Item it : BuiltInRegistries.ITEM) {
+            if (it instanceof BlockItem) {
+                int v = s.getValue(Stats.ITEM_USED.get(it));
+                if (v > 0) {
+                    m.put(BuiltInRegistries.ITEM.getKey(it).toString(), v);
+                }
+            }
+        }
+        return m;
+    }
+
+    private static Map<String, Integer> craftedMap(StatsCounter s) {
+        Map<String, Integer> m = new HashMap<>();
+        for (Item it : BuiltInRegistries.ITEM) {
+            int v = s.getValue(Stats.ITEM_CRAFTED.get(it));
+            if (v > 0) {
+                m.put(BuiltInRegistries.ITEM.getKey(it).toString(), v);
+            }
+        }
+        return m;
+    }
+
+    private static Map<String, Integer> killedMap(StatsCounter s) {
+        Map<String, Integer> m = new HashMap<>();
+        for (EntityType<?> t : BuiltInRegistries.ENTITY_TYPE) {
+            int v = s.getValue(Stats.ENTITY_KILLED.get(t));
+            if (v > 0) {
+                m.put(BuiltInRegistries.ENTITY_TYPE.getKey(t).toString(), v);
+            }
+        }
+        return m;
+    }
+
+    /** Per-key (current - baseline), keeping positives, sorted descending and trimmed to TOP_N. */
+    private static Map<String, Integer> topDelta(Map<String, Integer> current, Map<String, Integer> base) {
+        return current.entrySet().stream()
+                .map(e -> Map.entry(e.getKey(), e.getValue() - base.getOrDefault(e.getKey(), 0)))
+                .filter(e -> e.getValue() > 0)
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                .limit(TOP_N)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
     }
 
     private static ResourceLocation rl(String path) {

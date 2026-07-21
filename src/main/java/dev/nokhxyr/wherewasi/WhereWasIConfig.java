@@ -27,6 +27,7 @@ public final class WhereWasIConfig {
     public final ModConfigSpec.IntValue statsPollSeconds;
     public final ModConfigSpec.IntValue inventoryPollSeconds;
     public final ModConfigSpec.IntValue bulkAcquireThreshold;
+    public final ModConfigSpec.IntValue segmentMinutes;
     public final ModConfigSpec.IntValue zoneThresholdMinutes;
     public final ModConfigSpec.BooleanValue briefingEnabled;
     public final ModConfigSpec.IntValue briefingMinHoursSinceLast;
@@ -50,6 +51,8 @@ public final class WhereWasIConfig {
                 .defineInRange("inventoryPollSeconds", 10, 3, 120);
         bulkAcquireThreshold = b.comment("Items gained at once before logging a bulk acquisition.")
                 .defineInRange("bulkAcquireThreshold", 64, 8, 2000);
+        segmentMinutes = b.comment("Minutes between activity-chapter summaries on the timeline (mining/building/exploring/combat). 0-length windows with no activity are skipped.")
+                .defineInRange("segmentMinutes", 5, 1, 60);
         b.pop();
 
         b.push("zones");

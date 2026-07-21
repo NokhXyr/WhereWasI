@@ -1,5 +1,7 @@
 package dev.nokhxyr.wherewasi.ui;
 
+import java.util.Map;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -27,6 +29,7 @@ public final class BriefingScreen extends Screen {
     private int panelH;
     private int zoneLineY;
     private int factsY;
+    private int summaryY;
     private int deathsY;
 
     public BriefingScreen(Briefing briefing) {
@@ -48,7 +51,8 @@ public final class BriefingScreen extends Screen {
         }
 
         factsY = zoneLineY + 22;
-        deathsY = factsY + 12 + briefing.topEvents().size() * 20 + 8;
+        summaryY = factsY + 12 + briefing.topEvents().size() * 20 + 8;
+        deathsY = summaryY + summaryHeight();
         if (!briefing.deaths().isEmpty()) {
             addRenderableWidget(Button.builder(Component.translatable("wherewasi.btn.guide"), b -> guideToDeath())
                     .bounds(panelX + panelW - 70, deathsY + 6, 62, 16).build());
@@ -105,6 +109,17 @@ public final class BriefingScreen extends Screen {
             g.drawString(font, Component.translatable("wherewasi.briefing.nothing"), x + 4, ey, UiText.COL_DIM);
         }
 
+        // Session breakdown — what you mined / placed / crafted / killed.
+        if (summaryHeight() > 0) {
+            int catY = summaryY;
+            g.drawString(font, Component.translatable("wherewasi.briefing.activity"), x, catY, UiText.COL_ACCENT);
+            catY += 12;
+            catY = drawCategory(g, x, catY, "wherewasi.briefing.mined", last.mined(), false);
+            catY = drawCategory(g, x, catY, "wherewasi.briefing.placed", last.placed(), false);
+            catY = drawCategory(g, x, catY, "wherewasi.briefing.crafted", last.crafted(), false);
+            drawCategory(g, x, catY, "wherewasi.briefing.killed", last.killed(), true);
+        }
+
         // Deaths.
         if (!briefing.deaths().isEmpty()) {
             ActivityEvent d = briefing.deaths().get(0);
@@ -120,6 +135,35 @@ public final class BriefingScreen extends Screen {
             int ny = panelY + panelH - 44;
             g.drawString(font, Component.translatable("wherewasi.briefing.pinned", pinned.text()), x, ny, UiText.COL_ACCENT);
         }
+    }
+
+    private int summaryHeight() {
+        Session last = briefing.last();
+        int categories = 0;
+        if (!last.mined().isEmpty()) {
+            categories++;
+        }
+        if (!last.placed().isEmpty()) {
+            categories++;
+        }
+        if (!last.crafted().isEmpty()) {
+            categories++;
+        }
+        if (!last.killed().isEmpty()) {
+            categories++;
+        }
+        return categories > 0 ? 12 + categories * 10 + 4 : 0;
+    }
+
+    private int drawCategory(GuiGraphics g, int x, int y, String key, Map<String, Integer> counts, boolean entity) {
+        if (counts.isEmpty()) {
+            return y;
+        }
+        Component line = Component.translatable(key, UiText.summarizeCounts(counts, entity, 4));
+        g.enableScissor(x, y - 1, panelX + panelW - 10, y + 9);
+        g.drawString(font, line, x, y, UiText.COL_TEXT);
+        g.disableScissor();
+        return y + 10;
     }
 
     private Component distanceTo(String dim, int tx, int tz) {
