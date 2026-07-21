@@ -1,0 +1,74 @@
+# Auto-publish "Where Was I?" to Modrinth, CurseForge and the GitHub Release.
+#
+# Publishing a GitHub Release (with a v-prefixed tag, e.g. v1.2.0) builds the mod
+# and uploads it to all three targets at once. Full procedure: docs/RELEASING.md.
+# Nothing runs until the four repository secrets exist and the project pages are
+# created on Modrinth and CurseForge.
+name: Publish
+
+on:
+  # The real trigger: a GitHub Release going from draft to published.
+  release:
+    types: [published]
+  # Manual escape hatch (Actions tab -> Publish -> Run workflow). A manual run has
+  # no release context, so version/name/changelog fall back to the jar's metadata.
+  workflow_dispatch:
+
+# mc-publish attaches the built jar to the GitHub Release via github-token, which
+# needs write access to repository contents.
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Grab the source at the released tag.
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. JDK 21 (Temurin) — required by NeoForge 1.21.1 — with Gradle caching.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      # 3. Build the mod jar -> build/libs/wherewasi-<version>.jar
+      - name: Build
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build --no-daemon
+
+      # 4. Publish to Modrinth + CurseForge + the GitHub Release in one step.
+      - name: Publish
+        uses: Kir-Antipov/mc-publish@v3.3.1
+        with:
+          # --- Modrinth ------------------------------------------------------
+          modrinth-id: ${{ secrets.MODRINTH_ID }}
+          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
+
+          # --- CurseForge ----------------------------------------------------
+          curseforge-id: ${{ secrets.CURSEFORGE_ID }}
+          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
+
+          # --- GitHub Release (built-in token — no secret to create) ---------
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+          # --- Files to upload -----------------------------------------------
+          # The main mod jar only; the "!(*-sources)" glob excludes a sources jar.
+          files: "build/libs/!(*-sources).jar"
+
+          # --- Release metadata (pulled from the Release that triggered us) ---
+          name: ${{ github.event.release.name }}
+          version: ${{ github.event.release.tag_name }}
+          changelog: ${{ github.event.release.body }}
+          version-type: release
+
+          # --- Auto-detection ------------------------------------------------
+          # Game versions (1.21.1), loader (neoforge) and dependencies are read
+          # from the jar's neoforge.mods.toml automatically. If a release ever
+          # lands on the wrong game version or loader, uncomment and pin them:
+          # loaders: neoforge
+          # game-versions: 1.21.1

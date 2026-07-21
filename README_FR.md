@@ -260,6 +260,13 @@ le premier relevé tombe ~2 minutes plus tard — laisse-lui une session pour ch
 
 ---
 
+## 🚀 Publication
+
+Mainteneurs : la publication sur Modrinth & CurseForge est automatisée via GitHub Actions —
+crée une Release GitHub et elle part partout. Voir **[docs/RELEASING.md](docs/RELEASING.md)**.
+
+---
+
 ## 📜 Licence
 
 **Tous droits réservés** © 2026 NokhXyr. En résumé : **télécharge-le et joues-y**
