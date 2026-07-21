@@ -86,6 +86,10 @@ public final class BriefingScreen extends Screen {
         g.drawString(font, Component.translatable("wherewasi.briefing.last_session",
                 UiText.relativeTime(last.endEpochMs()), UiText.duration(last.durationMs())), x, y, UiText.COL_TEXT);
 
+        // Where you logged off.
+        g.drawString(font, Component.translatable("wherewasi.briefing.last_pos",
+                last.lastX(), last.lastY(), last.lastZ()), x, y + 12, UiText.COL_DIM);
+
         // Zone line with live distance/direction.
         Zone zone = briefing.mainZone();
         Component zoneLine;

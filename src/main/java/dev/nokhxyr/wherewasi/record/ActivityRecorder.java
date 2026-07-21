@@ -15,6 +15,7 @@ import dev.nokhxyr.wherewasi.WhereWasI;
 import dev.nokhxyr.wherewasi.WhereWasIConfig;
 import dev.nokhxyr.wherewasi.model.ActivityEvent;
 import dev.nokhxyr.wherewasi.model.EventType;
+import dev.nokhxyr.wherewasi.model.Importance;
 import dev.nokhxyr.wherewasi.model.Note;
 import dev.nokhxyr.wherewasi.model.Session;
 import dev.nokhxyr.wherewasi.model.WorldRef;
@@ -73,6 +74,18 @@ public final class ActivityRecorder {
     private boolean briefingPending;
     private long briefingDueMs;
 
+    // Per-action journal: coalesced break/place runs + interaction dedup ------
+    private static final long RUN_GAP_MS = 4000L;
+    private static final long INTERACT_DEDUP_MS = 1500L;
+    private String runBlock;
+    private boolean runIsPlace;
+    private int runCount;
+    private long runLastMs;
+    private int runX, runY, runZ;
+    private String runDim;
+    private String lastInteractKey;
+    private long lastInteractMs;
+
     // ---- tick loop ---------------------------------------------------------
 
     public void tick() {
@@ -92,6 +105,9 @@ public final class ActivityRecorder {
             } catch (Exception e) {
                 WhereWasI.LOGGER.warn("WhereWasI: sampler {} failed", s.getClass().getSimpleName(), e);
             }
+        }
+        if (runBlock != null && System.currentTimeMillis() - runLastMs > RUN_GAP_MS) {
+            flushRun(); // close a break/place run once you pause
         }
         tickBriefing(mc);
     }
@@ -124,6 +140,9 @@ public final class ActivityRecorder {
         eventCount = 0;
         sessionZoneDwell.clear();
         sMined = sPlaced = sCrafted = sKilled = Map.of();
+        runBlock = null;
+        runCount = 0;
+        lastInteractKey = null;
         if (player != null) {
             BlockPos pos = player.blockPosition();
             lastDim = player.level().dimension().location().toString();
@@ -154,6 +173,7 @@ public final class ActivityRecorder {
     private void endSession() {
         sessionActive = false;
         try {
+            flushRun(); // journal any break/place run still open
             for (Sampler s : samplers) {
                 try {
                     s.onSessionEnd(ctx);
@@ -193,6 +213,17 @@ public final class ActivityRecorder {
         briefingPending = false;
     }
 
+    /** A read-only snapshot of the in-progress session, for the logout situation report. */
+    public Session liveSnapshot() {
+        if (!sessionActive) {
+            return null;
+        }
+        return new Session(sessionId, worldId, worldName, startMs, System.currentTimeMillis(),
+                lastDim, lastX, lastY, lastZ, mainZone(),
+                blocksMined, mobsKilled, deaths, distanceCm, eventCount,
+                sMined, sPlaced, sCrafted, sKilled);
+    }
+
     private String mainZone() {
         String best = null;
         long bestMs = -1L;
@@ -203,6 +234,76 @@ public final class ActivityRecorder {
             }
         }
         return best;
+    }
+
+    // ---- per-action journal (called by InteractionEvents) ------------------
+
+    public void onBlockBroken(String blockId, int x, int y, int z, String dim) {
+        accumulateRun(false, blockId, x, y, z, dim);
+    }
+
+    public void onBlockPlaced(String blockId, int x, int y, int z, String dim) {
+        accumulateRun(true, blockId, x, y, z, dim);
+    }
+
+    /** Merges consecutive same-block break/place into one run; a type change or a pause flushes it. */
+    private void accumulateRun(boolean place, String blockId, int x, int y, int z, String dim) {
+        if (!sessionActive || storage == null || blockId == null) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        boolean same = runBlock != null && runIsPlace == place && runBlock.equals(blockId)
+                && now - runLastMs <= RUN_GAP_MS;
+        if (!same) {
+            flushRun();
+            runBlock = blockId;
+            runIsPlace = place;
+            runCount = 0;
+            runX = x;
+            runY = y;
+            runZ = z;
+            runDim = dim;
+        }
+        runCount++;
+        runLastMs = now;
+    }
+
+    public void onInteract(String blockId, int x, int y, int z, String dim, boolean container) {
+        if (!sessionActive || storage == null || blockId == null) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        String key = blockId + "@" + x + "," + y + "," + z;
+        if (key.equals(lastInteractKey) && now - lastInteractMs < INTERACT_DEDUP_MS) {
+            return; // ignore rapid re-opens of the same block
+        }
+        lastInteractKey = key;
+        lastInteractMs = now;
+        flushRun(); // keep the timeline in order: a run ends when you interact
+        Map<String, String> payload = new LinkedHashMap<>();
+        payload.put("block", blockId);
+        payload.put("action", container ? "open" : "use");
+        emitAt(EventType.INTERACT, dim, x, y, z, payload, now);
+    }
+
+    private void flushRun() {
+        if (runBlock == null || runCount <= 0) {
+            runBlock = null;
+            return;
+        }
+        Map<String, String> payload = new LinkedHashMap<>();
+        payload.put("block", runBlock);
+        payload.put("count", Integer.toString(runCount));
+        EventType type = runIsPlace ? EventType.BLOCK_PLACE : EventType.BLOCK_BREAK;
+        emitAt(type, runDim, runX, runY, runZ, payload, System.currentTimeMillis());
+        runBlock = null;
+        runCount = 0;
+    }
+
+    private void emitAt(EventType type, String dim, int x, int y, int z, Map<String, String> payload, long time) {
+        String d = dim == null ? lastDim : dim;
+        String zoneId = zones.zoneIdAt(d, x, z);
+        record(new ActivityEvent(time, type, d, x, y, z, zoneId, Importance.score(type, payload), payload));
     }
 
     // ---- event & state sink (called by samplers) ---------------------------
@@ -338,10 +439,12 @@ public final class ActivityRecorder {
         if (!WhereWasIConfig.CONFIG.briefingEnabled.get() || previous.isEmpty()) {
             return;
         }
-        Session last = previous.get(previous.size() - 1);
-        long hoursSince = (System.currentTimeMillis() - last.endEpochMs()) / 3_600_000L;
-        if (hoursSince < WhereWasIConfig.CONFIG.briefingMinHoursSinceLast.get()) {
-            return;
+        if (!WhereWasIConfig.CONFIG.briefingEveryJoin.get()) {
+            Session last = previous.get(previous.size() - 1);
+            long hoursSince = (System.currentTimeMillis() - last.endEpochMs()) / 3_600_000L;
+            if (hoursSince < WhereWasIConfig.CONFIG.briefingMinHoursSinceLast.get()) {
+                return;
+            }
         }
         briefingDueMs = System.currentTimeMillis() + WhereWasIConfig.CONFIG.briefingDelaySeconds.get() * 1000L;
         briefingPending = true;

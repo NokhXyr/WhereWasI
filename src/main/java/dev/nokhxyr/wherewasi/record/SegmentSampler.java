@@ -1,6 +1,9 @@
 package dev.nokhxyr.wherewasi.record;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import net.minecraft.client.player.LocalPlayer;
@@ -35,6 +38,8 @@ public final class SegmentSampler implements Sampler {
     private long placedAtStart;
     private long distAtStart;
     private int killsAtStart;
+    private Map<String, Integer> baseMinedMap = Map.of();
+    private Map<String, Integer> basePlacedMap = Map.of();
 
     @Override
     public void onSessionStart(RecorderContext ctx) {
@@ -84,6 +89,8 @@ public final class SegmentSampler implements Sampler {
         placedAtStart = totalPlaced(s);
         distAtStart = totalDistanceCm(s);
         killsAtStart = s.getValue(Stats.CUSTOM.get(Stats.MOB_KILLS));
+        baseMinedMap = minedMap(s);
+        basePlacedMap = placedMap(s);
     }
 
     private void emitSegment(RecorderContext ctx, StatsCounter s) {
@@ -102,6 +109,15 @@ public final class SegmentSampler implements Sampler {
         putIfPositive(payload, "placed", placed);
         putIfPositive(payload, "killed", killed);
         putIfPositive(payload, "distM", distM);
+        // Which blocks specifically — the top few broken / placed in this window.
+        String minedTop = encodeTop(minedMap(s), baseMinedMap);
+        String placedTop = encodeTop(placedMap(s), basePlacedMap);
+        if (!minedTop.isEmpty()) {
+            payload.put("minedTop", minedTop);
+        }
+        if (!placedTop.isEmpty()) {
+            payload.put("placedTop", placedTop);
+        }
         ctx.emit(EventType.SEGMENT, payload);
     }
 
@@ -156,5 +172,51 @@ public final class SegmentSampler implements Sampler {
                 + s.getValue(Stats.CUSTOM.get(Stats.CROUCH_ONE_CM))
                 + s.getValue(Stats.CUSTOM.get(Stats.SWIM_ONE_CM))
                 + s.getValue(Stats.CUSTOM.get(Stats.AVIATE_ONE_CM));
+    }
+
+    private static Map<String, Integer> minedMap(StatsCounter s) {
+        Map<String, Integer> m = new HashMap<>();
+        for (Block b : BuiltInRegistries.BLOCK) {
+            int v = s.getValue(Stats.BLOCK_MINED.get(b));
+            if (v > 0) {
+                m.put(BuiltInRegistries.BLOCK.getKey(b).toString(), v);
+            }
+        }
+        return m;
+    }
+
+    private static Map<String, Integer> placedMap(StatsCounter s) {
+        Map<String, Integer> m = new HashMap<>();
+        for (Item it : BuiltInRegistries.ITEM) {
+            if (it instanceof BlockItem) {
+                int v = s.getValue(Stats.ITEM_USED.get(it));
+                if (v > 0) {
+                    m.put(BuiltInRegistries.ITEM.getKey(it).toString(), v);
+                }
+            }
+        }
+        return m;
+    }
+
+    private static final int TOP_N = 4;
+
+    /** Top {@value #TOP_N} positive per-id deltas as a compact "id=count,id=count" string. */
+    private static String encodeTop(Map<String, Integer> current, Map<String, Integer> base) {
+        List<Map.Entry<String, Integer>> deltas = new ArrayList<>();
+        for (Map.Entry<String, Integer> e : current.entrySet()) {
+            int d = e.getValue() - base.getOrDefault(e.getKey(), 0);
+            if (d > 0) {
+                deltas.add(Map.entry(e.getKey(), d));
+            }
+        }
+        deltas.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < deltas.size() && i < TOP_N; i++) {
+            if (sb.length() > 0) {
+                sb.append(',');
+            }
+            sb.append(deltas.get(i).getKey()).append('=').append(deltas.get(i).getValue());
+        }
+        return sb.toString();
     }
 }

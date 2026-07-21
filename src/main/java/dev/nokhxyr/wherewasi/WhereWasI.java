@@ -30,9 +30,13 @@ public final class WhereWasI {
         modBus.addListener(Keybinds::onRegisterKeyMappings);
         modBus.addListener(ClientEvents::onRegisterGuiLayers);
 
-        // Game bus: the tick loop that drives capture, and session teardown.
+        // Game bus: the tick loop that drives capture, session teardown, and the
+        // pause-menu hook that asks for a situation report before you leave.
         NeoForge.EVENT_BUS.addListener(ClientEvents::onClientTick);
         NeoForge.EVENT_BUS.addListener(ClientEvents::onLoggingOut);
+        NeoForge.EVENT_BUS.addListener(MenuIntercept::onScreenInit);
+        NeoForge.EVENT_BUS.addListener(InteractionEvents::onLeftClickBlock);
+        NeoForge.EVENT_BUS.addListener(InteractionEvents::onRightClickBlock);
 
         LOGGER.info("Where Was I? loaded — client-side play journal ready.");
     }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import net.minecraft.client.gui.GuiGraphics;
@@ -161,8 +162,8 @@ public final class TimelineScreen extends Screen {
         for (ActivityEvent e : g.events()) {
             EventType t = e.type();
             if (typeFilter == null) {
-                if (t == EventType.SESSION_START || t == EventType.SESSION_END) {
-                    continue; // the session header already represents these
+                if (t == EventType.SESSION_START) {
+                    continue; // the session header already represents the start
                 }
             } else if (t != typeFilter) {
                 continue;
@@ -260,7 +261,7 @@ public final class TimelineScreen extends Screen {
         return new ScrollList.Row() {
             @Override
             public int height() {
-                return 20 + (expandedEvents.contains(e.time()) ? DETAIL_H : 0);
+                return 20 + (expandedEvents.contains(e.time()) ? detailHeight(e) : 0);
             }
 
             @Override
@@ -310,6 +311,13 @@ public final class TimelineScreen extends Screen {
                             .copy().append(UiText.dimensionName(e.dim()));
                     gg.drawString(font, coords, textX, y0 + 6, UiText.COL_DIM);
                     drawGuideButton(gg, x, width, y0, mouseX, mouseY);
+                    int ly = y0 + 20;
+                    for (Component bl : breakdownLines(e)) {
+                        gg.enableScissor(textX, ly - 1, x + width - 8, ly + 9);
+                        gg.drawString(font, bl, textX, ly, UiText.COL_DIM);
+                        gg.disableScissor();
+                        ly += 10;
+                    }
                 }
             }
 
@@ -328,6 +336,26 @@ public final class TimelineScreen extends Screen {
                 return true;
             }
         };
+    }
+
+    private int detailHeight(ActivityEvent e) {
+        return DETAIL_H + breakdownLines(e).size() * 10;
+    }
+
+    /** Per-block "what you broke / placed" lines shown when an activity chapter is expanded. */
+    private List<Component> breakdownLines(ActivityEvent e) {
+        List<Component> out = new ArrayList<>();
+        if (e.type() == EventType.SEGMENT) {
+            Map<String, Integer> mined = UiText.decodeCounts(e.get("minedTop"));
+            if (!mined.isEmpty()) {
+                out.add(Component.translatable("wherewasi.briefing.mined", UiText.summarizeCounts(mined, false, 4)));
+            }
+            Map<String, Integer> placed = UiText.decodeCounts(e.get("placedTop"));
+            if (!placed.isEmpty()) {
+                out.add(Component.translatable("wherewasi.briefing.placed", UiText.summarizeCounts(placed, false, 4)));
+            }
+        }
+        return out;
     }
 
     private void drawGuideButton(GuiGraphics gg, int x, int width, int y0, int mouseX, int mouseY) {

@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -133,11 +134,15 @@ public final class UiText {
             case ADVANCEMENT -> new ItemStack(Items.NETHER_STAR);
             case DIMENSION_CHANGE -> new ItemStack(Items.ENDER_PEARL);
             case BIOME_ENTER -> new ItemStack(Items.FILLED_MAP);
+            case BLOCK_BREAK -> stackOr(e.get("block"), Items.IRON_PICKAXE);
+            case BLOCK_PLACE -> stackOr(e.get("block"), Items.BRICKS);
+            case INTERACT -> stackOr(e.get("block"), Items.CHEST);
             case NOTE -> new ItemStack(Items.WRITABLE_BOOK);
             case ZONE_NAMED -> new ItemStack(Items.OAK_SIGN);
             case ZONE_ACTIVITY -> new ItemStack(Items.COMPASS);
             case SEGMENT -> new ItemStack(segmentIcon(e.get("activity")));
-            case SESSION_START, SESSION_END -> new ItemStack(Items.CLOCK);
+            case SESSION_START -> new ItemStack(Items.CLOCK);
+            case SESSION_END -> new ItemStack(Items.OAK_DOOR);
         };
     }
 
@@ -167,15 +172,18 @@ public final class UiText {
                     e.get("title") != null ? e.get("title") : e.get("adv"));
             case DIMENSION_CHANGE -> Component.translatable("wherewasi.event.dimension", dimensionName(e.get("to")));
             case BIOME_ENTER -> Component.translatable("wherewasi.event.biome_enter", biomeName(e.get("biome")));
+            case BLOCK_BREAK -> Component.translatable("wherewasi.event.block_break", e.getInt("count", 1), itemName(e.get("block")));
+            case BLOCK_PLACE -> Component.translatable("wherewasi.event.block_place", e.getInt("count", 1), itemName(e.get("block")));
+            case INTERACT -> Component.translatable(
+                    "open".equals(e.get("action")) ? "wherewasi.event.interact_open" : "wherewasi.event.interact_use",
+                    itemName(e.get("block")));
             case SEGMENT -> segmentLine(e);
             case NOTE -> Component.translatable("wherewasi.event.note", e.get("text") != null ? e.get("text") : "");
             case ZONE_NAMED -> Component.translatable("wherewasi.event.zone_named", e.get("name") != null ? e.get("name") : "");
             case ZONE_ACTIVITY -> Component.translatable("wherewasi.event.zone_activity",
                     e.getInt("mined", 0), e.getInt("kills", 0));
             case SESSION_START -> Component.translatable("wherewasi.event.session_start");
-            case SESSION_END -> e.get("summary") != null
-                    ? Component.translatable("wherewasi.event.session_end_summary", e.get("summary"))
-                    : Component.translatable("wherewasi.event.session_end");
+            case SESSION_END -> Component.translatable("wherewasi.event.logout", e.x(), e.y(), e.z());
         };
     }
 
@@ -192,6 +200,26 @@ public final class UiText {
             return Component.translatable("wherewasi.day.yesterday");
         }
         return Component.literal(DAY.format(day));
+    }
+
+    /** Parses a compact "id=count,id=count" payload string back into an ordered map. */
+    public static Map<String, Integer> decodeCounts(String encoded) {
+        Map<String, Integer> m = new LinkedHashMap<>();
+        if (encoded == null || encoded.isEmpty()) {
+            return m;
+        }
+        for (String part : encoded.split(",")) {
+            int eq = part.lastIndexOf('=');
+            if (eq <= 0) {
+                continue;
+            }
+            try {
+                m.put(part.substring(0, eq), Integer.parseInt(part.substring(eq + 1)));
+            } catch (NumberFormatException ignored) {
+                // skip a corrupt entry
+            }
+        }
+        return m;
     }
 
     public static Component biomeName(String id) {

@@ -30,6 +30,8 @@ public final class WhereWasIConfig {
     public final ModConfigSpec.IntValue segmentMinutes;
     public final ModConfigSpec.IntValue zoneThresholdMinutes;
     public final ModConfigSpec.BooleanValue briefingEnabled;
+    public final ModConfigSpec.BooleanValue briefingEveryJoin;
+    public final ModConfigSpec.BooleanValue debriefOnLogout;
     public final ModConfigSpec.IntValue briefingMinHoursSinceLast;
     public final ModConfigSpec.IntValue briefingDelaySeconds;
     public final ModConfigSpec.BooleanValue hudPinnedNote;
@@ -63,7 +65,11 @@ public final class WhereWasIConfig {
         b.push("briefing");
         briefingEnabled = b.comment("Show the resume briefing after joining a world.")
                 .define("briefingEnabled", true);
-        briefingMinHoursSinceLast = b.comment("Only auto-show the briefing if the previous session ended at least this many hours ago.")
+        briefingEveryJoin = b.comment("Show the briefing on every world join. When false, the delay below applies instead.")
+                .define("briefingEveryJoin", true);
+        debriefOnLogout = b.comment("Intercept 'Save and Quit' / 'Disconnect' to open a situation-report journal you fill in, then leave once you save it.")
+                .define("debriefOnLogout", true);
+        briefingMinHoursSinceLast = b.comment("When briefingEveryJoin is false: only auto-show the briefing if the previous session ended at least this many hours ago.")
                 .defineInRange("briefingMinHoursSinceLast", 6, 0, 240);
         briefingDelaySeconds = b.comment("Delay after joining before the briefing appears.")
                 .defineInRange("briefingDelaySeconds", 3, 0, 30);
