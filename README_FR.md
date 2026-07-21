@@ -1,6 +1,10 @@
 <!-- 🇫🇷 Version française · 🇬🇧 English version -->
 🇫🇷 **Version française** · 🇬🇧 [English version](README.md)
 
+<p align="center">
+  <img src="src/main/resources/icon.png" width="160" alt="Icône Where Was I?">
+</p>
+
 # Where Was I?
 
 ### Le mod qui répond à la question.
@@ -43,10 +47,11 @@ centième pile de cobble. À ton retour, il te tend le récap que tu n'as jamais
 ## ✨ Fonctionnalités
 
 ### 📋 Briefing de reprise
-Quelques secondes après avoir rejoint un monde — **une seule fois**, et seulement si ta
-dernière session remonte à un moment (6 heures par défaut) — un briefing s'affiche :
+Quelques secondes après avoir rejoint un monde — **à chaque fois**, par défaut — un
+briefing s'affiche :
 
 - quand remonte ta **dernière session** et combien de temps elle a duré,
+- où tu t'es **déconnecté** la dernière fois (coordonnées),
 - ta **zone principale**, avec la **distance et la direction en temps réel** depuis
   l'endroit où tu te trouves,
 - les **3 à 5 événements majeurs** de cette session, avec les icônes des objets,
@@ -57,6 +62,13 @@ Les entrées de zone et de mort ont un bouton **« Guider »** qui allume une pe
 à l'écran pour t'y ramener — sans aucune minimap. Tu peux rouvrir le briefing quand tu
 veux avec **B**.
 
+### 🚪 Point de situation à la déconnexion
+Clique sur **« Sauvegarder et quitter »** ou **« Se déconnecter »** et le mod s'intercale
+d'abord avec un court **point de situation** : un récap de la session que tu viens de
+jouer, plus un champ de texte pour noter où tu en es et la suite. Enregistre-le — il est
+épinglé en tête de ton prochain briefing — et *ensuite* le jeu quitte normalement.
+Activable/désactivable via `debriefOnLogout`.
+
 ### 🛰️ Capture automatique (le cœur du mod)
 Aucun bouton à presser. Pendant que tu joues, le mod :
 
@@ -65,7 +77,13 @@ Aucun bouton à presser. Pendant que tu joues, le mod :
 - compare ton **inventaire** pour détecter la première fois que tu obtiens un objet, et
   les gros gains,
 - relève les **morts** (avec la cause), les **changements de dimension** et les
-  **progrès** débloqués.
+  **progrès** débloqués,
+- journalise tes **actions en détail** — blocs cassés et posés (regroupés en séries, ex.
+  *« cassé 24 pierre »*), **interactions** (coffres, fours, portes, établis…) et
+  **mouvements d'objets** (ramassés, jetés, rangés / pris dans un conteneur),
+- découvre chaque **nouveau biome** où tu mets les pieds,
+- découpe chaque tranche de jeu en **chapitres d'activité** — minage / construction /
+  exploration / combat — toutes les quelques minutes.
 
 **L'astuce des stats vanilla.** Voilà comment les chiffres restent *exacts* sur
 n'importe quel serveur : toutes les deux minutes environ, le mod envoie discrètement la
@@ -83,9 +101,12 @@ alimentent la « zone principale » du briefing. Tu les gères (renommer / fusio
 supprimer) depuis l'écran des zones.
 
 ### 📖 Timeline
-Appuie sur **J** pour le journal complet : tous les événements, du plus récent au plus
-ancien, **regroupés par jour**, avec les icônes des objets et des **filtres** par type
-d'événement et par zone. Défilement fluide, zéro fouillis.
+Appuie sur **J** pour le journal complet — désormais **regroupé en sessions repliables**,
+de la plus récente à la plus ancienne. L'en-tête de chaque session affiche sa plage
+horaire, sa durée, sa zone principale et un résumé de ce que tu as fait ; déplie-la pour
+révéler un **rail vertical** des événements de la session dans l'ordre. Clique sur un
+événement pour voir ses coordonnées et un bouton **« Guider »** qui pointe la flèche du
+HUD dessus. Filtre tout l'historique par type d'événement ou par zone.
 
 ### 📌 Notes épinglées
 Appuie sur **N** pour griffonner une note rapide liée à l'endroit où tu te trouves.
@@ -147,6 +168,7 @@ Toutes les touches sont réassignables dans **Options → Commandes → Where Wa
 | Ouvrir le journal / la timeline | **J** |
 | Ajouter une note | **N** |
 | Afficher le briefing de reprise | **B** |
+| Marquer un coin de zone (claim) | **K** |
 | Gérer les zones | *non assignée* |
 | Effacer la flèche de guidage | *non assignée* |
 
@@ -163,15 +185,20 @@ La config client se trouve dans `config/wherewasi-client.toml` (modifiable en je
 | capture | `statsPollSeconds` | 120 | fréquence de la requête de stats vanilla silencieuse |
 | capture | `inventoryPollSeconds` | 10 | fréquence de comparaison de l'inventaire |
 | capture | `bulkAcquireThreshold` | 64 | quantité obtenue d'un coup avant de logger un « gros gain » |
+| capture | `segmentMinutes` | 5 | minutes entre chaque résumé de chapitre d'activité |
 | zones | `zoneThresholdMinutes` | 20 | minutes dans une cellule 64×64 avant de proposer une zone |
 | briefing | `briefingEnabled` | true | afficher le briefing à la connexion |
-| briefing | `briefingMinHoursSinceLast` | 6 | ne l'afficher que si la dernière session remonte à autant d'heures |
+| briefing | `briefingEveryJoin` | true | l'afficher à chaque connexion (si false, le délai ci-dessous s'applique) |
+| briefing | `briefingMinHoursSinceLast` | 6 | si `briefingEveryJoin` est off : ne l'afficher que si la dernière session remonte à autant d'heures |
 | briefing | `briefingDelaySeconds` | 3 | délai après la connexion avant l'apparition du briefing |
+| briefing | `debriefOnLogout` | true | ouvrir un point de situation à remplir quand tu quittes un monde |
 | hud | `hudPinnedNote` | true | afficher la note épinglée sur le HUD |
 | hud | `hudGuide` | true | afficher la flèche de guidage sur le HUD |
 | hud | `hudCorner` | TOP_LEFT | dans quel coin fixer les widgets du HUD |
 
-> Tu veux le briefing à chaque fois pour tester ? Mets `briefingMinHoursSinceLast = 0`.
+> Le briefing s'affiche à **chaque** connexion par défaut (`briefingEveryJoin = true`).
+> Tu le préfères seulement après une longue pause ? Mets `briefingEveryJoin = false` et
+> ajuste `briefingMinHoursSinceLast`.
 
 ---
 
@@ -206,6 +233,11 @@ le premier relevé tombe ~2 minutes plus tard — laisse-lui une session pour ch
   miné, échangé ou ramassé. Les comptes *exacts* par action (miné / crafté / tué)
   viennent du diff des stats vanilla, qui fait foi — mais les deux vues ne sont pas
   corrélées événement par événement.
+- **Le log par action est côté client et approximatif.** Les blocs cassés sont comptés
+  quand tu *commences* à les casser, les poses au clic droit, et les mouvements d'objets
+  (ramassé / jeté / rangé / pris) viennent du diff d'inventaire — ces entrées sont donc
+  des estimations groupées, pas un registre serveur qui fait foi. Les actions derrière
+  l'écran personnalisé d'un autre mod peuvent être manquées.
 - **Les stats ont jusqu'à un relevé de retard** (~2 min) et partent d'une base prise après
   la connexion : les toutes premières secondes d'une session ne sont donc pas attribuées.
 - **Les jalons sont par session** (« premier diamant *de cette session* »), pas les tout
@@ -235,3 +267,5 @@ le premier relevé tombe ~2 minutes plus tard — laisse-lui une session pour ch
 des vidéos/streams** — mais **ne le ré-héberge pas**, ne distribue pas de versions
 modifiées et ne réutilise pas son code ou ses assets. Conditions complètes dans
 [LICENSE](LICENSE).
+
+Voir [CHANGELOG.md](CHANGELOG.md) pour l'historique complet.

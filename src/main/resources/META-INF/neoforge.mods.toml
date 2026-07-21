@@ -7,6 +7,9 @@ modId = "${mod_id}"
 version = "${mod_version}"
 displayName = "Where Was I?"
 authors = "${mod_authors}"
+# Shown in the in-game mod list. The file lives at src/main/resources/icon.png
+# (packed to the jar root); replace it to change the icon.
+logoFile = "icon.png"
 description = '''
 ${mod_description}
 '''

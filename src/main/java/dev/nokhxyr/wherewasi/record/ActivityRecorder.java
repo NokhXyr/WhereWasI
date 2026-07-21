@@ -40,6 +40,7 @@ public final class ActivityRecorder {
             new StatsPoller(),
             new SegmentSampler(),
             new InventoryDiffer(),
+            new InventoryTransactionWatcher(),
             new BiomeWatcher(),
             new AdvancementWatcher(),
             new DeathWatcher());
@@ -74,15 +75,11 @@ public final class ActivityRecorder {
     private boolean briefingPending;
     private long briefingDueMs;
 
-    // Per-action journal: coalesced break/place runs + interaction dedup ------
+    // Per-action journal: coalesced runs (blocks broken/placed, items moved) --
     private static final long RUN_GAP_MS = 4000L;
     private static final long INTERACT_DEDUP_MS = 1500L;
-    private String runBlock;
-    private boolean runIsPlace;
-    private int runCount;
-    private long runLastMs;
-    private int runX, runY, runZ;
-    private String runDim;
+    private final Run blockRun = new Run();
+    private final Run itemRun = new Run();
     private String lastInteractKey;
     private long lastInteractMs;
 
@@ -106,9 +103,8 @@ public final class ActivityRecorder {
                 WhereWasI.LOGGER.warn("WhereWasI: sampler {} failed", s.getClass().getSimpleName(), e);
             }
         }
-        if (runBlock != null && System.currentTimeMillis() - runLastMs > RUN_GAP_MS) {
-            flushRun(); // close a break/place run once you pause
-        }
+        blockRun.idleFlush(); // close a run once you pause on it
+        itemRun.idleFlush();
         tickBriefing(mc);
     }
 
@@ -140,8 +136,8 @@ public final class ActivityRecorder {
         eventCount = 0;
         sessionZoneDwell.clear();
         sMined = sPlaced = sCrafted = sKilled = Map.of();
-        runBlock = null;
-        runCount = 0;
+        blockRun.reset();
+        itemRun.reset();
         lastInteractKey = null;
         if (player != null) {
             BlockPos pos = player.blockPosition();
@@ -173,7 +169,8 @@ public final class ActivityRecorder {
     private void endSession() {
         sessionActive = false;
         try {
-            flushRun(); // journal any break/place run still open
+            blockRun.flush(); // journal any run still open
+            itemRun.flush();
             for (Sampler s : samplers) {
                 try {
                     s.onSessionEnd(ctx);
@@ -236,36 +233,25 @@ public final class ActivityRecorder {
         return best;
     }
 
-    // ---- per-action journal (called by InteractionEvents) ------------------
+    // ---- per-action journal (blocks + item moves) --------------------------
 
     public void onBlockBroken(String blockId, int x, int y, int z, String dim) {
-        accumulateRun(false, blockId, x, y, z, dim);
+        if (sessionActive && storage != null) {
+            blockRun.add(EventType.BLOCK_BREAK, blockId, 1, x, y, z, dim);
+        }
     }
 
     public void onBlockPlaced(String blockId, int x, int y, int z, String dim) {
-        accumulateRun(true, blockId, x, y, z, dim);
+        if (sessionActive && storage != null) {
+            blockRun.add(EventType.BLOCK_PLACE, blockId, 1, x, y, z, dim);
+        }
     }
 
-    /** Merges consecutive same-block break/place into one run; a type change or a pause flushes it. */
-    private void accumulateRun(boolean place, String blockId, int x, int y, int z, String dim) {
-        if (!sessionActive || storage == null || blockId == null) {
-            return;
+    /** Called by the inventory watcher for pickup / drop / storage put / take. */
+    void onItemTransaction(EventType type, String itemId, int count, int x, int y, int z, String dim) {
+        if (sessionActive && storage != null) {
+            itemRun.add(type, itemId, count, x, y, z, dim);
         }
-        long now = System.currentTimeMillis();
-        boolean same = runBlock != null && runIsPlace == place && runBlock.equals(blockId)
-                && now - runLastMs <= RUN_GAP_MS;
-        if (!same) {
-            flushRun();
-            runBlock = blockId;
-            runIsPlace = place;
-            runCount = 0;
-            runX = x;
-            runY = y;
-            runZ = z;
-            runDim = dim;
-        }
-        runCount++;
-        runLastMs = now;
     }
 
     public void onInteract(String blockId, int x, int y, int z, String dim, boolean container) {
@@ -279,31 +265,77 @@ public final class ActivityRecorder {
         }
         lastInteractKey = key;
         lastInteractMs = now;
-        flushRun(); // keep the timeline in order: a run ends when you interact
+        blockRun.flush(); // keep the timeline in order: a run ends when you interact
         Map<String, String> payload = new LinkedHashMap<>();
         payload.put("block", blockId);
         payload.put("action", container ? "open" : "use");
         emitAt(EventType.INTERACT, dim, x, y, z, payload, now);
     }
 
-    private void flushRun() {
-        if (runBlock == null || runCount <= 0) {
-            runBlock = null;
-            return;
-        }
-        Map<String, String> payload = new LinkedHashMap<>();
-        payload.put("block", runBlock);
-        payload.put("count", Integer.toString(runCount));
-        EventType type = runIsPlace ? EventType.BLOCK_PLACE : EventType.BLOCK_BREAK;
-        emitAt(type, runDim, runX, runY, runZ, payload, System.currentTimeMillis());
-        runBlock = null;
-        runCount = 0;
-    }
-
     private void emitAt(EventType type, String dim, int x, int y, int z, Map<String, String> payload, long time) {
         String d = dim == null ? lastDim : dim;
         String zoneId = zones.zoneIdAt(d, x, z);
         record(new ActivityEvent(time, type, d, x, y, z, zoneId, Importance.score(type, payload), payload));
+    }
+
+    private static boolean isBlockType(EventType t) {
+        return t == EventType.BLOCK_BREAK || t == EventType.BLOCK_PLACE;
+    }
+
+    /** Coalesces consecutive same-(type, id) actions into one counted event; flushed on a pause or change. */
+    private final class Run {
+        private EventType type;
+        private String id;
+        private int count;
+        private long lastMs;
+        private int x, y, z;
+        private String dim;
+
+        void add(EventType t, String rid, int c, int rx, int ry, int rz, String rdim) {
+            if (rid == null || c <= 0) {
+                return;
+            }
+            long now = System.currentTimeMillis();
+            if (type != t || !rid.equals(id) || now - lastMs > RUN_GAP_MS) {
+                flush();
+                type = t;
+                id = rid;
+                count = 0;
+                x = rx;
+                y = ry;
+                z = rz;
+                dim = rdim;
+            }
+            count += c;
+            lastMs = now;
+        }
+
+        void idleFlush() {
+            if (type != null && System.currentTimeMillis() - lastMs > RUN_GAP_MS) {
+                flush();
+            }
+        }
+
+        void flush() {
+            if (type == null || id == null || count <= 0) {
+                type = null;
+                id = null;
+                return;
+            }
+            Map<String, String> payload = new LinkedHashMap<>();
+            payload.put(isBlockType(type) ? "block" : "item", id);
+            payload.put("count", Integer.toString(count));
+            emitAt(type, dim, x, y, z, payload, System.currentTimeMillis());
+            type = null;
+            id = null;
+            count = 0;
+        }
+
+        void reset() {
+            type = null;
+            id = null;
+            count = 0;
+        }
     }
 
     // ---- event & state sink (called by samplers) ---------------------------

@@ -137,6 +137,7 @@ public final class UiText {
             case BLOCK_BREAK -> stackOr(e.get("block"), Items.IRON_PICKAXE);
             case BLOCK_PLACE -> stackOr(e.get("block"), Items.BRICKS);
             case INTERACT -> stackOr(e.get("block"), Items.CHEST);
+            case ITEM_PICKUP, ITEM_DROP, STORAGE_PUT, STORAGE_TAKE -> stackOr(e.get("item"), Items.CHEST);
             case NOTE -> new ItemStack(Items.WRITABLE_BOOK);
             case ZONE_NAMED -> new ItemStack(Items.OAK_SIGN);
             case ZONE_ACTIVITY -> new ItemStack(Items.COMPASS);
@@ -177,6 +178,10 @@ public final class UiText {
             case INTERACT -> Component.translatable(
                     "open".equals(e.get("action")) ? "wherewasi.event.interact_open" : "wherewasi.event.interact_use",
                     itemName(e.get("block")));
+            case ITEM_PICKUP -> Component.translatable("wherewasi.event.item_pickup", e.getInt("count", 1), itemName(e.get("item")));
+            case ITEM_DROP -> Component.translatable("wherewasi.event.item_drop", e.getInt("count", 1), itemName(e.get("item")));
+            case STORAGE_PUT -> Component.translatable("wherewasi.event.storage_put", e.getInt("count", 1), itemName(e.get("item")));
+            case STORAGE_TAKE -> Component.translatable("wherewasi.event.storage_take", e.getInt("count", 1), itemName(e.get("item")));
             case SEGMENT -> segmentLine(e);
             case NOTE -> Component.translatable("wherewasi.event.note", e.get("text") != null ? e.get("text") : "");
             case ZONE_NAMED -> Component.translatable("wherewasi.event.zone_named", e.get("name") != null ? e.get("name") : "");

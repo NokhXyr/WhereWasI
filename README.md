@@ -1,6 +1,10 @@
 <!-- 🇬🇧 English version · 🇫🇷 [Version française](README_FR.md) -->
 🇬🇧 **English version** · 🇫🇷 [Version française](README_FR.md)
 
+<p align="center">
+  <img src="src/main/resources/icon.png" width="160" alt="Where Was I? icon">
+</p>
+
 # Where Was I?
 
 ### The mod that answers the question.
@@ -41,10 +45,10 @@ you return, it hands you the recap you never wrote.
 ## ✨ Features
 
 ### 📋 Resume briefing
-A few seconds after you join a world — **once**, and only if your last session ended
-a while ago (6 hours by default) — a briefing pops up:
+A few seconds after you join a world — **every time**, by default — a briefing pops up:
 
 - when your **last session** was and how long it ran,
+- where you **logged off** last time (coordinates),
 - your **main area**, with the **live distance and direction** to it from where you
   are right now,
 - the **top 3–5 events** of that session, with item icons,
@@ -55,13 +59,25 @@ The zone and death entries have a **“Guide”** button that lights up a lightw
 on-screen arrow pointing you back — no minimap required. You can re-open the briefing
 anytime with **B**.
 
+### 🚪 Situation report on logout
+Hit **“Save and Quit to Title”** or **“Disconnect”** and the mod steps in first with a
+short **situation report**: a recap of the session you just played, plus a text box to
+jot down where you're at and what's next. Save it — it's pinned to the top of your next
+briefing — and *then* the game leaves as usual. Toggle it with `debriefOnLogout`.
+
 ### 🛰️ Automatic capture (the good part)
 No buttons to press. While you play, the mod:
 
 - tracks **sessions** (per world / per server, so journals never mix),
 - samples **position + dimension** to learn where you spend your time,
 - diffs your **inventory** to catch the first time you ever get an item, and big hauls,
-- notes **deaths** (with cause), **dimension changes**, and **advancements**.
+- notes **deaths** (with cause), **dimension changes**, and **advancements**,
+- logs your **actions in detail** — blocks broken and placed (grouped into runs, e.g.
+  *"broke 24 stone"*), **interactions** (chests, furnaces, doors, workstations…), and
+  **item moves** (picked up, dropped, put in / taken from a container),
+- discovers each **new biome** you set foot in,
+- splits every stretch of play into **activity chapters** — mining / building /
+  exploring / combat — every few minutes.
 
 **The vanilla-stats trick.** Here's how the numbers stay *exact* on any server: every
 couple of minutes the mod silently sends the very same request the vanilla
@@ -77,8 +93,11 @@ offers — via a discreet toast — to **name that place**. Call it *Base*, *Iro
 them (rename / merge / delete) from the zones screen.
 
 ### 📖 Timeline
-Press **J** for the full journal: every event, newest first, **grouped by day**, with
-item icons and **filters** by event type and by zone. Smooth scrolling, no clutter.
+Press **J** for the full journal — **grouped into collapsible sessions**, newest first.
+Each session header shows its span, duration, main zone and a summary of what you did;
+expand it to reveal a **vertical rail** of that session's events in order. Click any event
+to open its coordinates and a **“Guide”** button that points the HUD arrow straight at it.
+Filter the whole history by event type or by zone.
 
 ### 📌 Pinned notes
 Press **N** to jot a quick note tied to where you're standing. Pin one (only one at a
@@ -137,6 +156,7 @@ All keys are rebindable in **Options → Controls → Where Was I?**
 | Open the journal / timeline | **J** |
 | Add a note | **N** |
 | Show the resume briefing | **B** |
+| Mark a zone corner (claim) | **K** |
 | Manage zones | *unbound* |
 | Clear the HUD guide arrow | *unbound* |
 
@@ -153,15 +173,19 @@ screens too). Defaults:
 | capture | `statsPollSeconds` | 120 | how often the silent vanilla-stats request is sent |
 | capture | `inventoryPollSeconds` | 10 | how often the inventory is diffed |
 | capture | `bulkAcquireThreshold` | 64 | items gained at once before logging a "big haul" |
+| capture | `segmentMinutes` | 5 | minutes between activity-chapter summaries |
 | zones | `zoneThresholdMinutes` | 20 | minutes in a 64×64 cell before it offers to name a zone |
 | briefing | `briefingEnabled` | true | show the briefing on join |
-| briefing | `briefingMinHoursSinceLast` | 6 | only auto-show if the last session ended this long ago |
+| briefing | `briefingEveryJoin` | true | show it on every join (when false, the delay below applies) |
+| briefing | `briefingMinHoursSinceLast` | 6 | when `briefingEveryJoin` is off: only auto-show if the last session ended this long ago |
 | briefing | `briefingDelaySeconds` | 3 | delay after joining before the briefing appears |
+| briefing | `debriefOnLogout` | true | open a fill-in situation report when you leave a world |
 | hud | `hudPinnedNote` | true | draw the pinned note on the HUD |
 | hud | `hudGuide` | true | draw the guide arrow on the HUD |
 | hud | `hudCorner` | TOP_LEFT | which corner the HUD widgets attach to |
 
-> Want the briefing every single time for testing? Set `briefingMinHoursSinceLast = 0`.
+> The briefing shows on **every** join by default (`briefingEveryJoin = true`). Prefer it
+> only after a long break? Set `briefingEveryJoin = false` and tune `briefingMinHoursSinceLast`.
 
 ---
 
@@ -192,6 +216,10 @@ poll lands ~2 minutes in — so give it a session to warm up.
   so an item reads the same whether you crafted, mined, traded for or found it. The
   *exact* per-action counts (mined / crafted / killed) come from the vanilla-stats diff,
   which is authoritative — but the two views aren't cross-correlated per event.
+- **Per-action logging is client-side and approximate.** Blocks broken are counted when
+  you *start* breaking them, placements when you right-click, and item moves (pickup /
+  drop / store / take) come from inventory diffs — so those entries are grouped estimates,
+  not a server-authoritative ledger. Actions behind another mod's custom screen may be missed.
 - **Stats lag by up to one poll** (~2 min) and are measured from a post-join baseline, so
   the very first seconds of a session aren't attributed.
 - **Milestones are per-session** ("first diamond *this session*"), not first-ever across a
@@ -220,4 +248,5 @@ poll lands ~2 minutes in — so give it a session to warm up.
 official sources), **put it in modpacks** (with credit), and **make videos/streams**
 about it — but **don't** re-upload it, ship modified versions, or reuse its code or
 assets. Full terms in [LICENSE](LICENSE).
-# WhereWasI
+
+See [CHANGELOG.md](CHANGELOG.md) for the full history.
