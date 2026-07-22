@@ -5,7 +5,6 @@ import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
-import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.neoforged.neoforge.client.event.ScreenEvent;
@@ -25,7 +24,10 @@ public final class MenuIntercept {
     }
 
     public static void onScreenInit(ScreenEvent.Init.Post event) {
-        if (!(event.getScreen() instanceof PauseScreen)) {
+        // Act on any in-world pause menu, including modpack ones that replace the
+        // vanilla PauseScreen with their own class — we still match the quit button
+        // by its translatable key, so a custom-styled screen is handled all the same.
+        if (Minecraft.getInstance().level == null) {
             return;
         }
         if (!WhereWasIConfig.CONFIG.debriefOnLogout.get() || !ClientState.recorder().sessionActive()) {
