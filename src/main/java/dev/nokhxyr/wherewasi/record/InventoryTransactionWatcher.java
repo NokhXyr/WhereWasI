@@ -11,10 +11,18 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ChestMenu;
-import net.minecraft.world.inventory.DispenserMenu;
-import net.minecraft.world.inventory.HopperMenu;
-import net.minecraft.world.inventory.ShulkerBoxMenu;
+import net.minecraft.world.inventory.AbstractFurnaceMenu;
+import net.minecraft.world.inventory.AnvilMenu;
+import net.minecraft.world.inventory.BeaconMenu;
+import net.minecraft.world.inventory.BrewingStandMenu;
+import net.minecraft.world.inventory.CartographyTableMenu;
+import net.minecraft.world.inventory.CraftingMenu;
+import net.minecraft.world.inventory.EnchantmentMenu;
+import net.minecraft.world.inventory.GrindstoneMenu;
+import net.minecraft.world.inventory.LoomMenu;
+import net.minecraft.world.inventory.MerchantMenu;
+import net.minecraft.world.inventory.SmithingMenu;
+import net.minecraft.world.inventory.StonecutterMenu;
 import net.minecraft.world.item.ItemStack;
 
 import dev.nokhxyr.wherewasi.model.EventType;
@@ -67,7 +75,7 @@ public final class InventoryTransactionWatcher implements Sampler {
             return;
         }
 
-        boolean storage = isStorageMenu(p.containerMenu);
+        boolean storage = isStorageMenu(p);
         boolean inWorld = mc.screen == null;
         boolean dropRecent = ctx.now() - lastDropMs <= DROP_WINDOW_MS;
         BlockPos pos = p.blockPosition();
@@ -103,11 +111,34 @@ public final class InventoryTransactionWatcher implements Sampler {
         return null; // a workstation or the player's own inventory screen — not a transaction
     }
 
-    private static boolean isStorageMenu(AbstractContainerMenu menu) {
-        return menu instanceof ChestMenu
-                || menu instanceof HopperMenu
-                || menu instanceof ShulkerBoxMenu
-                || menu instanceof DispenserMenu;
+    /**
+     * Storage = any external container the player has open that isn't a known vanilla
+     * workstation. Rather than whitelisting chest/barrel/etc. (which misses modded
+     * storage like Refined Storage, Mekanism or Sophisticated Storage), we accept every
+     * non-inventory menu and only exclude the vanilla crafting/processing screens — so
+     * a modded storage GUI is treated as storage automatically.
+     */
+    private static boolean isStorageMenu(LocalPlayer p) {
+        AbstractContainerMenu menu = p.containerMenu;
+        if (menu == null || menu == p.inventoryMenu) {
+            return false; // no external container open
+        }
+        return !isWorkstation(menu);
+    }
+
+    private static boolean isWorkstation(AbstractContainerMenu menu) {
+        return menu instanceof CraftingMenu
+                || menu instanceof AbstractFurnaceMenu
+                || menu instanceof AnvilMenu
+                || menu instanceof GrindstoneMenu
+                || menu instanceof LoomMenu
+                || menu instanceof CartographyTableMenu
+                || menu instanceof StonecutterMenu
+                || menu instanceof SmithingMenu
+                || menu instanceof EnchantmentMenu
+                || menu instanceof BrewingStandMenu
+                || menu instanceof BeaconMenu
+                || menu instanceof MerchantMenu;
     }
 
     private static Map<String, Integer> snapshot(LocalPlayer p) {

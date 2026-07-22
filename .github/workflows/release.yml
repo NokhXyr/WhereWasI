@@ -1,0 +1,61 @@
+# Build the mod on GitHub and attach the jar to a GitHub Release automatically.
+#
+# Trigger: pushing a tag like v1.2.0 builds the mod and creates the matching GitHub
+# Release with the built jar attached. No secrets or external accounts needed — it
+# uses the built-in GITHUB_TOKEN. Full procedure: docs/RELEASING.md.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  # Manual run (Actions -> Release -> Run workflow). Run it FROM A TAG to publish a
+  # release; run it from a branch and it only builds (a CI smoke test), publishing nothing.
+  workflow_dispatch:
+
+# Creating the Release and uploading the jar needs write access to repo contents.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Source at the pushed tag, with full history + tags so the tag message reads back.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      # 2. JDK 21 (Temurin) — required by NeoForge 1.21.1 — with Gradle caching.
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      # 3. Build -> build/libs/wherewasi-<minecraft>-<mod>.jar
+      - name: Build
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build --no-daemon
+
+      # 4. Use the annotated tag's message as the release notes; fall back to a default
+      #    line for a lightweight (unannotated) tag so the release still has a body.
+      - name: Prepare release notes
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          git tag -l --format='%(contents)' "${{ github.ref_name }}" > RELEASE_NOTES.md
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "See commit history." > RELEASE_NOTES.md
+          fi
+
+      # 5. Create the GitHub Release for this tag and attach the jar.
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v3.0.2
+        with:
+          body_path: RELEASE_NOTES.md
+          files: build/libs/*.jar
+          fail_on_unmatched_files: true

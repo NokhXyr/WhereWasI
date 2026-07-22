@@ -262,8 +262,18 @@ le premier relevé tombe ~2 minutes plus tard — laisse-lui une session pour ch
 
 ## 🚀 Publication
 
-Mainteneurs : la publication sur Modrinth & CurseForge est automatisée via GitHub Actions —
-crée une Release GitHub et elle part partout. Voir **[docs/RELEASING.md](docs/RELEASING.md)**.
+Mainteneurs : les builds sont automatisés via GitHub Actions (aucun secret requis — le
+`GITHUB_TOKEN` intégré suffit). Pour couper une release : bump `mod_version` dans
+`gradle.properties`, commit, puis pousse un **tag annoté** (son message devient les notes
+de version) :
+
+```bash
+git tag -a vX.Y.Z -m "Notes de version…"
+git push origin vX.Y.Z
+```
+
+Le workflow `Release` build le mod et attache `wherewasi-1.21.1-X.Y.Z.jar` à une nouvelle
+Release GitHub pour ce tag.
 
 ---
 

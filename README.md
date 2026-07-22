@@ -244,8 +244,17 @@ poll lands ~2 minutes in — so give it a session to warm up.
 
 ## 🚀 Releasing
 
-Maintainers: publishing to Modrinth & CurseForge is automated with GitHub Actions —
-create a GitHub Release and it ships everywhere. See **[docs/RELEASING.md](docs/RELEASING.md)**.
+Maintainers: builds are automated with GitHub Actions (no secrets needed — it uses the
+built-in `GITHUB_TOKEN`). To cut a release, bump `mod_version` in `gradle.properties`,
+commit, then push an **annotated tag** (its message becomes the release notes):
+
+```bash
+git tag -a vX.Y.Z -m "Release notes…"
+git push origin vX.Y.Z
+```
+
+The `Release` workflow builds the mod and attaches `wherewasi-1.21.1-X.Y.Z.jar` to a new
+GitHub Release for that tag.
 
 ---
 
