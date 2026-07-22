@@ -244,8 +244,9 @@ poll lands ~2 minutes in — so give it a session to warm up.
 
 ## 🚀 Releasing
 
-Maintainers: publishing to Modrinth & CurseForge is automated with GitHub Actions —
-create a GitHub Release and it ships everywhere. See **[docs/RELEASING.md](docs/RELEASING.md)**.
+Maintainers: builds are automated with GitHub Actions — push a `vX.Y.Z` tag and it builds
+the mod and attaches the jar to a matching GitHub Release (no secrets needed). See
+**[docs/RELEASING.md](docs/RELEASING.md)**.
 
 ---
 

@@ -262,8 +262,9 @@ le premier relevé tombe ~2 minutes plus tard — laisse-lui une session pour ch
 
 ## 🚀 Publication
 
-Mainteneurs : la publication sur Modrinth & CurseForge est automatisée via GitHub Actions —
-crée une Release GitHub et elle part partout. Voir **[docs/RELEASING.md](docs/RELEASING.md)**.
+Mainteneurs : les builds sont automatisés via GitHub Actions — pousse un tag `vX.Y.Z` et il
+build le mod puis attache le jar à une Release GitHub (aucun secret requis). Voir
+**[docs/RELEASING.md](docs/RELEASING.md)**.
 
 ---
 
