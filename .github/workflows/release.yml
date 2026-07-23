@@ -7,7 +7,9 @@ name: Release
 
 on:
   push:
-    tags: ["v*"]
+    # Tag filters are CASE-SENSITIVE: "V1.0.0" would silently never trigger with only "v*",
+    # so both cases are accepted.
+    tags: ["v*", "V*"]
   # Manual run (Actions -> Release -> Run workflow). Run it FROM A TAG to publish a
   # release; run it from a branch and it only builds (a CI smoke test), publishing nothing.
   workflow_dispatch:
@@ -61,3 +63,8 @@ jobs:
           # always exactly one jar — no risk of grabbing a stale jar from build/libs.
           files: release/*.jar
           fail_on_unmatched_files: true
+          # Be explicit: publish immediately (a draft would be invisible in the Releases
+          # tab's public count) and mark it as the latest release.
+          draft: false
+          prerelease: false
+          make_latest: "true"
