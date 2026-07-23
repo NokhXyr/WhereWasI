@@ -57,5 +57,7 @@ jobs:
         uses: softprops/action-gh-release@v3.0.2
         with:
           body_path: RELEASE_NOTES.md
-          files: build/libs/*.jar
+          # /release/ is cleaned to hold only the fresh build (packageRelease), so this is
+          # always exactly one jar — no risk of grabbing a stale jar from build/libs.
+          files: release/*.jar
           fail_on_unmatched_files: true

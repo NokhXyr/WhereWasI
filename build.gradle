@@ -3,8 +3,24 @@ plugins {
     id 'net.neoforged.moddev' version '2.0.142'
 }
 
-// Jar version carries the game version too: wherewasi-1.21.1-1.0.0.jar
-version = "${minecraft_version}-${mod_version}"
+// Jar version. On GitHub Actions (release builds cut from a tag) use the clean version,
+// e.g. wherewasi-1.21.1-1.0.0.jar. Locally, append an auto-incrementing build number so
+// every `./gradlew build` produces a distinctly-named jar (…-1.0.0.<n>.jar) you can spot
+// in /release/. The counter persists in build_number.txt (git-ignored, per machine).
+def baseVersion = "${minecraft_version}-${mod_version}"
+if (System.getenv('GITHUB_ACTIONS') == 'true') {
+    version = baseVersion
+} else {
+    def buildNumberFile = file('build_number.txt')
+    def buildNumber = buildNumberFile.exists() ? (buildNumberFile.text.trim() as int) : 0
+    def buildTaskNames = ['build', 'jar', 'assemble', 'packageRelease'] as Set
+    boolean buildingJar = gradle.startParameter.taskNames.any { buildTaskNames.contains(it.tokenize(':').last()) }
+    if (buildingJar) {
+        buildNumber += 1
+        buildNumberFile.text = buildNumber.toString()
+    }
+    version = "${baseVersion}.${buildNumber}"
+}
 group = mod_group_id
 
 base {
@@ -42,6 +58,18 @@ neoForge {
         }
     }
 }
+
+// After every build, drop the finished jar into /release/ at the project root so it's
+// easy to find — build/libs is buried and git-ignored. The same-named jar is overwritten.
+tasks.register('packageRelease', Copy) {
+    description = 'Copies the built mod jar into /release/.'
+    group = 'build'
+    // Keep /release/ holding only the current build (its name carries the new build number).
+    doFirst { delete(fileTree(layout.projectDirectory.dir('release')) { include('*.jar') }) }
+    from tasks.named('jar').flatMap { it.archiveFile }
+    into layout.projectDirectory.dir('release')
+}
+tasks.named('build').configure { finalizedBy 'packageRelease' }
 
 // Expand ${...} placeholders in neoforge.mods.toml with the values from gradle.properties.
 // Keep the charset explicit so UTF-8 literals in the toml survive filtering.

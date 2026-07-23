@@ -5,6 +5,13 @@ moddev/
 resources/
 tmp/
 
+# Local build artifacts (per-machine)
+# /release/ holds the current build (see packageRelease); build/libs accumulates one jar
+# per build number. Published jars live on GitHub Releases, so none of this belongs in git.
+/release/
+build_number.txt
+build/libs/*.jar
+
 # ModDevGradle run directories
 run/
 runs/
